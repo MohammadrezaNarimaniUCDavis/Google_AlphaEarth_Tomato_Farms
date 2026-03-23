@@ -1,0 +1,32 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{hyperref}
+
+\graphicspath{{figures/}{../figures/}}
+
+\title{Tomato farm detection with Google Alpha Earth and LandIQ}
+\author{Your Name \\ University of California, Davis}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We outline a workflow to identify tomato fields using LandIQ crop polygons, extract multi-year Google Alpha Earth satellite embeddings, and train deep learning models for generalization to unseen years. This document is a scaffold; replace with your abstract.
+\end{abstract}
+
+\input{sections/intro}
+\input{sections/methods}
+\input{sections/results}
+\input{sections/discussion}
+
+\nocite{*}
+
+\bibliographystyle{plainnat}
+\bibliography{bibliography/references}
+
+\end{document}

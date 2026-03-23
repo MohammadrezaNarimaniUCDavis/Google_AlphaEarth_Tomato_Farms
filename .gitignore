@@ -1,0 +1,45 @@
+# Local config (copy from configs/paths.example.yaml)
+configs/paths.local.yaml
+*.env
+.env.*
+
+# Raw and large derived data
+data/raw/
+
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# LaTeX build artifacts
+paper/build/
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+
+# Model checkpoints and weights
+modeling/**/checkpoints/
+*.ckpt
+*.pth
+*.pt
+*.h5
+*.onnx
+
+# OS
+.DS_Store
+Thumbs.db

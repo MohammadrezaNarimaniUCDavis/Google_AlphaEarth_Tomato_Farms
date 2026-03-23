@@ -1,0 +1,25 @@
+# Copy this file to configs/paths.local.yaml (gitignored) and adjust paths.
+
+project_root: "."  # or absolute path to repo root
+
+data:
+  raw_landiQ: "data/raw/landiq"
+  derived_tomato: "data/derived/landiq_tomato"
+  alpha_earth_clips: "data/derived/alpha_earth_clips"
+  splits: "data/splits"
+
+landiq:
+  # Set after exploring shapefiles in notebook 01
+  shapefile_glob: "*.shp"
+  # If set, only search under data/raw/landiq/<year>/ (e.g. 2024). Omit to search all years.
+  year: null
+  # Use recursive search (needed after unzipping into subfolders)
+  shapefile_recursive: true
+  crop_column: null  # e.g. "CROP2016" or "CROPCODE"
+  tomato_values: []  # e.g. ["Tomatoes", "TOM"] or numeric codes
+
+alpha_earth:
+  years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+  # crs: "EPSG:4326"  # set to match your raster stack
+
+figures_dir: "figures"

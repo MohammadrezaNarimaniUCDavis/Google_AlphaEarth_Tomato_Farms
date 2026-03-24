@@ -1,0 +1,6 @@
+# Paste under landiq: in configs/paths.local.yaml (merge with your paths)
+
+year: 2018
+zip_filename: null  # set to exact zip in data/raw/landiq/2018/ or rely on auto-detect
+tomato_values: ["T15", "T26"]
+crop_columns: ["CROPTYP1", "CROPTYP2", "CROPTYP3"]

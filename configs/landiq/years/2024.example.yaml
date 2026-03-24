@@ -1,0 +1,6 @@
+# Paste under landiq: in configs/paths.local.yaml
+
+year: 2024
+zip_filename: "i15_crop_mapping_2024_provisional.zip"
+tomato_values: ["T15", "T26"]
+crop_columns: ["CROPTYP1", "CROPTYP2", "CROPTYP3"]

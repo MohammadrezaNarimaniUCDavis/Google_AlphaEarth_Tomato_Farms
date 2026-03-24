@@ -10,6 +10,7 @@ pyyaml>=6.0
 # Notebooks
 jupyter>=1.0.0
 ipykernel>=6.0.0
+pypdf>=4.0.0
 
 # Optional: Google Earth Engine Python API (uncomment if you use EE for Alpha Earth)
 # earthengine-api>=0.1.375

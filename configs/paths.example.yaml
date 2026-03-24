@@ -1,4 +1,5 @@
 # Copy this file to configs/paths.local.yaml (gitignored) and adjust paths.
+# Per-survey-year snippets: configs/landiq/years/*.example.yaml
 
 project_root: "."  # or absolute path to repo root
 
@@ -9,14 +10,25 @@ data:
   splits: "data/splits"
 
 landiq:
-  # Set after exploring shapefiles in notebook 01
+  # Optional explicit vector path (repo-relative). If set, skips glob under data/raw/landiq/…
+  # e.g. after unzip to data/derived/landiq_extracted/<year>/…
+  input_shapefile: null
+  # Set after exploring shapefiles (notebooks/landiq/years/…)
   shapefile_glob: "*.shp"
   # If set, only search under data/raw/landiq/<year>/ (e.g. 2024). Omit to search all years.
   year: null
   # Use recursive search (needed after unzipping into subfolders)
   shapefile_recursive: true
-  crop_column: null  # e.g. "CROP2016" or "CROPCODE"
-  tomato_values: []  # e.g. ["Tomatoes", "TOM"] or numeric codes
+  # Single column (used if crop_columns is not set):
+  crop_column: null  # e.g. "CROPTYP2"
+  # OR across multiple slots (2016 Land IQ: CROPTYP1–3); catches T15/T26 in any slot:
+  crop_columns: null  # e.g. ["CROPTYP1", "CROPTYP2", "CROPTYP3"]
+  tomato_values: []  # e.g. ["T15", "T26"] for 2016 legend
+  # Output GPKG filename inside data/derived/landiq_tomato/ (optional).
+  # If null and year is set, default is landiq_tomato_<year>.gpkg; else landiq_tomato.gpkg
+  output_filename: null  # e.g. "landiq_tomato_2016.gpkg"
+  # For explore notebook: optional explicit zip name inside raw/landiq/<year>/
+  zip_filename: null  # e.g. "i15_crop_mapping_2016_shp.zip"
 
 alpha_earth:
   years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]

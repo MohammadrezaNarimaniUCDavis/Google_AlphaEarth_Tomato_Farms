@@ -15,7 +15,7 @@ Detect and study **tomato farms** using **LandIQ** crop polygons and **Google Al
 |------|---------|
 | [`data/`](data/README.md) | Raw LandIQ (not committed), derived tomato polygons, Alpha Earth clips, train/val/test splits |
 | [`configs/`](configs/paths.example.yaml) | Example path and crop settings; copy to `paths.local.yaml` (gitignored) |
-| [`notebooks/`](notebooks/) | Exploratory and clipping workflows; [`notebooks/sagemaker/`](notebooks/sagemaker/README.md) for cloud notes |
+| [`notebooks/`](notebooks/README.md) | Index: [`landiq/years/<YEAR>/`](notebooks/landiq/years/) (survey-year code), [`landiq/`](notebooks/landiq/) (shared), [`alpha_earth/`](notebooks/alpha_earth/), [`sagemaker/`](notebooks/sagemaker/README.md) |
 | [`src/`](src/) | Reusable Python: LandIQ inspect/filter, Alpha Earth clipping helpers |
 | [`modeling/`](modeling/README.md) | SageMaker `train.py` stub and future inference code |
 | [`figures/`](figures/README.md) | Exports for the manuscript |
@@ -31,20 +31,31 @@ Detect and study **tomato farms** using **LandIQ** crop polygons and **Google Al
 
 ## Environment setup
 
-From the repository root:
+Use the **conda environment you already have** (for example one where you use Google Earth Engine). No need to create a new env for this repo.
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
+From the repository root, activate it, then work there:
+
+**Windows (PowerShell or Anaconda Prompt):**
+
+```powershell
+conda activate gee
+cd c:\mnarimani\1-UCDavis\9-Github\Google_AlphaEarth_Tomato_Farms
+pip install -e .
+```
+
+**`pip install -e .`** registers the `src` package in your conda env so notebooks can run `from src...` without setting `PYTHONPATH`. Re-run it after cloning on a new machine.
+
+Optional: still set `PYTHONPATH` to the repo root if you prefer not to install.
+
+If anything from this project is missing in that env, install only what you need, for example:
+
+```powershell
 pip install -r requirements.txt
 ```
 
-Use **conda** instead if you prefer: `conda env create -f environment.yml`.
+(Optional) New machines can instead use `environment.yml` or a fresh venv—only when you do not already have a suitable stack.
 
-**Imports:** run notebooks and scripts with the repo root on `PYTHONPATH` (default if you start Jupyter from the repo root), or:
-
-- Windows (PowerShell): `$env:PYTHONPATH = (Get-Location).Path`
-- Linux/macOS: `export PYTHONPATH="$(pwd)"`
+**Imports:** after `pip install -e .`, Jupyter and scripts resolve `import src` automatically. Otherwise set `PYTHONPATH` to the repo root (Windows: `$env:PYTHONPATH = (Get-Location).Path`).
 
 **CLI filter (optional):** after configuring `configs/paths.local.yaml`:
 
@@ -56,21 +67,23 @@ python -m src.landiq.filter_tomato
 
 ### Step 1 — Understand LandIQ shapefiles
 
-Open [`notebooks/01_explore_landiQ.ipynb`](notebooks/01_explore_landiQ.ipynb). Load the shapefile, list columns, and run value counts on crop-related fields. **Record** the column name and the **exact** tomato code(s) (strings or integers).
+- **By survey year:** [`notebooks/landiq/years/`](notebooks/landiq/years/README.md) — e.g. [`01_2016_explore…`](notebooks/landiq/years/2016/01_2016_explore_shapefile_and_tomato_codes.ipynb) (T15 / T26) and [`years/shared/explore_landiq_year.ipynb`](notebooks/landiq/years/shared/explore_landiq_year.ipynb) for any year.
+
+**Record** the column name and the **exact** tomato code(s) (strings or integers).
 
 ### Step 2 — Tomato-only polygons
 
 1. Copy [`configs/paths.example.yaml`](configs/paths.example.yaml) to `configs/paths.local.yaml`.
-2. Set `landiq.crop_column`, `landiq.tomato_values`, and adjust `landiq.shapefile_glob` if needed.
-3. Run [`notebooks/02_filter_tomato_polygons.ipynb`](notebooks/02_filter_tomato_polygons.ipynb) or `python -m src.landiq.filter_tomato`.
-4. Confirm output under `data/derived/landiq_tomato/` (e.g. `landiq_tomato.gpkg`). Document CRS, LandIQ vintage, and any area filters you applied.
+2. Set `landiq.tomato_values` and either **`landiq.crop_columns`** (list, OR across slots such as `CROPTYP1`–`3`) or **`landiq.crop_column`** (single). Adjust `landiq.shapefile_glob` if needed.
+3. Run [`notebooks/landiq/years/2016/02_filter_tomato_polygons.ipynb`](notebooks/landiq/years/2016/02_filter_tomato_polygons.ipynb) or `python -m src.landiq.filter_tomato` (set `landiq.year` in config for other vintages).
+4. Confirm output under `data/derived/landiq_tomato/` (default `landiq_tomato_<year>.gpkg` when `landiq.year` is set, or `landiq.output_filename`). Tomato rows retain **all** LandIQ attribute columns. Document CRS, vintage, and any area filters you applied.
 
 ### Step 3 — Clip Alpha Earth (2015–2025)
 
 1. Obtain or export **per-year** rasters (or stacks) aligned with your study.
 2. Place them in a folder you control (example in notebook: `data/derived/alpha_earth_rasters/`).
 3. Implement `load_raster_for_year` in [`src/alpha_earth/clip_to_polygons.py`](src/alpha_earth/clip_to_polygons.py) to match your naming convention.
-4. Run [`notebooks/03_clip_alpha_earth.ipynb`](notebooks/03_clip_alpha_earth.ipynb). Clips default to `data/derived/alpha_earth_clips/` (configurable in YAML).
+4. Run [`notebooks/alpha_earth/01_clip_alpha_earth.ipynb`](notebooks/alpha_earth/01_clip_alpha_earth.ipynb). Clips default to `data/derived/alpha_earth_clips/` (configurable in YAML).
 
 ### Step 4 — Splits for deep learning
 

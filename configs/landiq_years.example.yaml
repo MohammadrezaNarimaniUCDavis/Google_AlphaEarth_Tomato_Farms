@@ -1,0 +1,4 @@
+# Deprecated layout — use per-year files under configs/landiq/years/
+# Example: configs/landiq/years/2016.example.yaml
+#
+# See configs/landiq/years/README.md

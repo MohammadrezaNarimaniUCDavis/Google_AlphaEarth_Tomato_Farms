@@ -5,6 +5,13 @@ configs/paths.local.yaml
 
 # Raw and large derived data
 data/raw/
+# Extracted LandIQ shapefiles (large; reproducible from ZIP under raw)
+data/derived/landiq_extracted/
+# Filtered tomato GPKG (reproducible via filter notebook / CLI)
+data/derived/landiq_tomato/
+
+# Python packaging
+*.egg-info/
 
 # Python
 **/__pycache__/

@@ -128,3 +128,23 @@ def attribute_table_overview(gdf: gpd.GeoDataFrame) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows)
+
+
+def dwr_group_from_code(code: str) -> str:
+    """Map a LandIQ/DWR crop code into a coarse group label.
+
+    Examples:
+    - ``T15`` -> ``T``
+    - ``G6`` -> ``G``
+    - ``YP`` -> ``YP``
+    - ``****`` / empty -> ``UNK``
+    """
+    if code is None:
+        return "UNK"
+    s = str(code).strip()
+    if not s or s == "****":
+        return "UNK"
+    if s.upper() == "YP":
+        return "YP"
+    # Most codes are like "<LETTER><digits>" (e.g. C1, F10, V2). Group by the leading letter.
+    return s[0].upper()

@@ -78,3 +78,18 @@ def landiq_tomato_gpkg_path(cfg: dict[str, Any], root: Path | None = None) -> Pa
     if yr is not None:
         return (base / f"landiq_tomato_{yr}.gpkg").resolve()
     return (base / "landiq_tomato.gpkg").resolve()
+
+
+def landiq_non_tomato_gpkg_path(cfg: dict[str, Any], root: Path | None = None) -> Path:
+    """Path to the filtered non-tomato (negative) GeoPackage (all LandIQ columns preserved)."""
+    root = root or REPO_ROOT
+    sub = cfg.get("data", {}).get("derived_non_tomato", "data/derived/landiq_non_tomato")
+    base = root / sub if not Path(sub).is_absolute() else Path(sub)
+    lc = cfg.get("landiq", {})
+    fn = lc.get("output_non_tomato_filename")
+    if fn:
+        return (base / fn).resolve()
+    yr = lc.get("year")
+    if yr is not None:
+        return (base / f"landiq_non_tomato_{yr}.gpkg").resolve()
+    return (base / "landiq_non_tomato.gpkg").resolve()

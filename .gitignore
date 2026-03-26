@@ -14,6 +14,8 @@ data/raw/
 data/derived/landiq_extracted/
 # Filtered tomato GPKG (reproducible via filter notebook / CLI)
 data/derived/landiq_tomato/
+# Filtered non-tomato GPKG (same masking logic)
+data/derived/landiq_non_tomato/
 # Alpha Earth / EE GeoTIFF exports (can be large)
 data/derived/alpha_earth_clips/
 data/derived/alpha_earth_rasters/

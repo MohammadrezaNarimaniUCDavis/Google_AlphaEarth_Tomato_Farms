@@ -6,6 +6,7 @@ project_root: "."  # or absolute path to repo root
 data:
   raw_landiQ: "data/raw/landiq"
   derived_tomato: "data/derived/landiq_tomato"
+  derived_non_tomato: "data/derived/landiq_non_tomato"
   alpha_earth_clips: "data/derived/alpha_earth_clips"
   splits: "data/splits"
 
@@ -27,6 +28,9 @@ landiq:
   # Output GPKG filename inside data/derived/landiq_tomato/ (optional).
   # If null and year is set, default is landiq_tomato_<year>.gpkg; else landiq_tomato.gpkg
   output_filename: null  # e.g. "landiq_tomato_2018.gpkg"
+  # Output GPKG filename inside data/derived/landiq_non_tomato/ (optional).
+  # If null and year is set, default is landiq_non_tomato_<year>.gpkg; else landiq_non_tomato.gpkg
+  output_non_tomato_filename: null  # e.g. "landiq_non_tomato_2018.gpkg"
   # For explore notebook: optional explicit zip name inside raw/landiq/<year>/
   zip_filename: null  # e.g. "i15_crop_mapping_2018_shp.zip"
 

@@ -4,11 +4,10 @@
 
 **LandIQ** lives under `raw/landiq/`. This directory is **gitignored** because files are large and often license-restricted.
 
-Typical layout (by survey year — **2016, 2018–2024** in this project):
+Typical layout (by survey year — **2018–2024** in this project):
 
 ```text
 raw/landiq/
-  2016/
   2018/
   2019/
   2020/
@@ -31,7 +30,8 @@ Do not commit raw imagery or Alpha Earth exports unless your license allows it a
 | Subfolder | Contents |
 |-----------|----------|
 | `landiq_tomato/` | Tomato-only polygons (e.g. GeoPackage or GeoJSON) produced after filtering. |
-| `alpha_earth_clips/` | Rasters or extracted embeddings clipped to tomato polygons, organized by year. |
+| `alpha_earth_rasters/` | Local GeoTIFF / COG stacks, typically `<year>/*.tif` (see `alpha_earth.local_raster_root`). **Gitignored** when large. |
+| `alpha_earth_clips/` | Clipped outputs: `local/landiq<YEAR>/…` or EE `ee/landiq<YEAR>/<run_id>_…/`. **Gitignored** when large. |
 
 ## `splits/`
 

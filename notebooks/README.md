@@ -4,8 +4,8 @@ From the repo root, run **`pip install -e .`** in the same conda env as Jupyter 
 
 | Folder | Contents |
 |--------|----------|
-| [`landiq/`](landiq/) | LandIQ: [`landiq/years/`](landiq/years/); tomato filter in [`landiq/years/2016/02_filter…`](landiq/years/2016/02_filter_tomato_polygons.ipynb) |
-| [`alpha_earth/`](alpha_earth/) | Clip or extract Alpha Earth (multi-year) to tomato polygons |
+| [`landiq/`](landiq/) | LandIQ: [`landiq/years/`](landiq/years/); filter in [`landiq/years/2018/02_filter…`](landiq/years/2018/02_filter_tomato_polygons.ipynb) |
+| [`alpha_earth/`](alpha_earth/) | EE: [`alpha_earth/earth_engine/years/2018/`](alpha_earth/earth_engine/years/2018/); local clip: [`alpha_earth/years/2018/`](alpha_earth/years/2018/) |
 | [`sagemaker/`](sagemaker/) | Notes for AWS SageMaker + GPU (no code notebook required) |
 
 Suggested order for LandIQ → clips: **landiq** notebooks first, then **alpha_earth**.

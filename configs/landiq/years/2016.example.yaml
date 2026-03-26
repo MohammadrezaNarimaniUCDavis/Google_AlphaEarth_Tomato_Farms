@@ -1,9 +1,0 @@
-# Paste under landiq: in configs/paths.local.yaml (merge with your paths)
-
-year: 2016
-# If the .shp lives under data/derived (not raw), point here instead of relying on raw glob:
-# input_shapefile: "data/derived/landiq_extracted/2016/i15_Crop_Mapping_2016_SHP/i15_Crop_Mapping_2016.shp"
-zip_filename: "i15_crop_mapping_2016_shp.zip"
-tomato_values: ["T15", "T26"]
-crop_columns: ["CROPTYP1", "CROPTYP2", "CROPTYP3"]
-# output_filename: null   # -> landiq_tomato_2016.gpkg by default

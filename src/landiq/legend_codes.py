@@ -1,4 +1,4 @@
-"""Map legend codes to columns in LandIQ attribute tables (e.g. tomato T15, T26 for 2016)."""
+"""Map legend codes to columns in LandIQ attribute tables (e.g. tomato T15, T26)."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from typing import Sequence
 import geopandas as gpd
 import pandas as pd
 
-from .years.landiq_2016 import TOMATO_CODES as TOMATO_CODES_2016
+from .years.landiq_2018 import TOMATO_CODES as TOMATO_CODES_2018
 
-# Default Land IQ 2016 pattern: CROPTYP1, CROPTYP2, CROPTYP3 (up to three crop slots per polygon).
+# Default Land IQ pattern: CROPTYP1, CROPTYP2, CROPTYP3 (up to three crop slots per polygon).
 CROPTYP_COLUMN_PATTERN = re.compile(r"^CROPTYP\d+$", re.IGNORECASE)
 
 

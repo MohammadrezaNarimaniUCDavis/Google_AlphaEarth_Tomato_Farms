@@ -4,7 +4,6 @@ Copy fields into `configs/paths.local.yaml` under `landiq:`. Files are **not** a
 
 | Year | Example snippet |
 |------|-----------------|
-| 2016 | [`2016.example.yaml`](2016.example.yaml) |
 | 2018 | [`2018.example.yaml`](2018.example.yaml) |
 | 2019 | [`2019.example.yaml`](2019.example.yaml) |
 | 2020 | [`2020.example.yaml`](2020.example.yaml) |

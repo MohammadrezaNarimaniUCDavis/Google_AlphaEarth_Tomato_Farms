@@ -1,8 +1,9 @@
 # LandIQ **2018**
 
-- **Raw:** `data/raw/landiq/2018/` (ZIP + legend PDF).
-- **Explore:** open [`../shared/explore_landiq_year.ipynb`](../shared/explore_landiq_year.ipynb), set `YEAR = 2018`, run all cells (ZIP auto-detect if registry has no fixed name).
-- **Config snippet:** [`../../../../configs/landiq/years/2018.example.yaml`](../../../../configs/landiq/years/2018.example.yaml) → merge into `configs/paths.local.yaml`.
-- **Filter:** [`../2016/02_filter_tomato_polygons.ipynb`](../2016/02_filter_tomato_polygons.ipynb) (set `landiq.year` in `paths.local.yaml`).
+- **01 — Explore:** [`01_2018_explore_shapefile_and_tomato_codes.ipynb`](01_2018_explore_shapefile_and_tomato_codes.ipynb) — unzip (auto-detect crop ZIP under raw), attributes, **T15** / **T26**, `CROPTYP*` slots, legend PDF.
+- **Generic driver:** [`../shared/explore_landiq_year.ipynb`](../shared/explore_landiq_year.ipynb) with `YEAR = 2018` works too.
+- **02 — Filter:** [`02_filter_tomato_polygons.ipynb`](02_filter_tomato_polygons.ipynb) — tomato-only GPKG (all attributes kept).
+- **Raw:** `data/raw/landiq/2018/`
+- **Config:** [`../../../../configs/landiq/years/2018.example.yaml`](../../../../configs/landiq/years/2018.example.yaml)
 
-Optional: copy [`../shared/explore_landiq_year.ipynb`](../shared/explore_landiq_year.ipynb) into this folder if you want a frozen 2018-specific copy.
+**Alpha Earth:** EE pilot [`01_pilot_landiq2018_alphaearth_ee.ipynb`](../../../alpha_earth/earth_engine/years/2018/01_pilot_landiq2018_alphaearth_ee.ipynb) · local GeoTIFF clip [`01_clip_local_alphaearth_2018_tomato.ipynb`](../../../alpha_earth/years/2018/01_clip_local_alphaearth_2018_tomato.ipynb)

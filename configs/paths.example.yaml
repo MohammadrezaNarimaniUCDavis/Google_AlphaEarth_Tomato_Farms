@@ -21,17 +21,34 @@ landiq:
   shapefile_recursive: true
   # Single column (used if crop_columns is not set):
   crop_column: null  # e.g. "CROPTYP2"
-  # OR across multiple slots (2016 Land IQ: CROPTYP1–3); catches T15/T26 in any slot:
+  # OR across multiple slots (Land IQ: CROPTYP1–3); catches T15/T26 in any slot:
   crop_columns: null  # e.g. ["CROPTYP1", "CROPTYP2", "CROPTYP3"]
-  tomato_values: []  # e.g. ["T15", "T26"] for 2016 legend
+  tomato_values: []  # e.g. ["T15", "T26"] for DWR legend
   # Output GPKG filename inside data/derived/landiq_tomato/ (optional).
   # If null and year is set, default is landiq_tomato_<year>.gpkg; else landiq_tomato.gpkg
-  output_filename: null  # e.g. "landiq_tomato_2016.gpkg"
+  output_filename: null  # e.g. "landiq_tomato_2018.gpkg"
   # For explore notebook: optional explicit zip name inside raw/landiq/<year>/
-  zip_filename: null  # e.g. "i15_crop_mapping_2016_shp.zip"
+  zip_filename: null  # e.g. "i15_crop_mapping_2018_shp.zip"
 
 alpha_earth:
   years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+  # Local GeoTIFF / COG stack root: put one file (or nested .tif) under <root>/<year>/ e.g. alpha_earth_rasters/2018/embeddings.tif
+  local_raster_root: "data/derived/alpha_earth_rasters"
   # crs: "EPSG:4326"  # set to match your raster stack
+  # Earth Engine: GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL (AlphaEarth) — see notebooks/alpha_earth/earth_engine/
+  gee:
+    # Cloud project ID or number for ee.Initialize (optional if present in credentials JSON or EE_PROJECT)
+    project: null
+    embedding_collection: "GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL"
+    # Calendar year of embedding composite (2017–2024 in catalog). Align with landiq.year when possible (e.g. both 2018).
+    embedding_year: 2018
+    scale_m: 10
+    export_crs: "EPSG:4326"
+    # Parallel getDownloadURL + HTTP downloads (threads). Lower if Earth Engine throttles.
+    download_workers: 8
+    # Unused by the EE notebook (mask runs inside each download thread). Kept for future tooling.
+    mask_workers: null
+    # null = export every tomato polygon in the GPKG; integer = first N only (omit key defaults to 5 in the EE notebook)
+    pilot_polygon_count: null
 
 figures_dir: "figures"

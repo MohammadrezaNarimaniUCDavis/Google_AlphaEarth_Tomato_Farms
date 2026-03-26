@@ -20,17 +20,36 @@ except ImportError:  # pragma: no cover
     rio_mask = None
 
 
-def load_raster_for_year(year: int, raster_root: Path) -> "rasterio.io.DatasetReader | None":
-    """Return an open rasterio dataset for `year`, or None if not implemented.
+def resolve_raster_path_for_year(raster_root: Path, year: int) -> Path | None:
+    """Find a GeoTIFF for ``year``.
 
-    Expected layout example: raster_root / f"alpha_earth_{year}.tif"
+    Search order:
+
+    1. ``raster_root / str(year) /`` — any ``*.tif`` (shallow glob, then recursive).
+    2. ``raster_root / *{year}*.tif`` (top level only).
     """
+    if not raster_root.is_dir():
+        return None
+    sub = raster_root / str(year)
+    if sub.is_dir():
+        shallow = sorted(sub.glob("*.tif"))
+        if shallow:
+            return shallow[0]
+        deep = sorted(sub.rglob("*.tif"))
+        if deep:
+            return deep[0]
+    top = sorted(raster_root.glob(f"*{year}*.tif"))
+    return top[0] if top else None
+
+
+def load_raster_for_year(year: int, raster_root: Path) -> "rasterio.io.DatasetReader | None":
+    """Open the first matching GeoTIFF for ``year`` under ``raster_root`` (see ``resolve_raster_path_for_year``)."""
     if rasterio is None:
         return None
-    candidates = sorted(raster_root.glob(f"*{year}*.tif"))
-    if not candidates:
+    p = resolve_raster_path_for_year(raster_root, year)
+    if p is None:
         return None
-    return rasterio.open(candidates[0])
+    return rasterio.open(p)
 
 
 def clip_raster_to_gdf(

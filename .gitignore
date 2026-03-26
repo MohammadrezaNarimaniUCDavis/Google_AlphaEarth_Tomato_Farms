@@ -3,12 +3,20 @@ configs/paths.local.yaml
 *.env
 .env.*
 
+# Google Earth Engine / OAuth — never commit local auth files (use earthengine authenticate only on your machine)
+**/earthengine/credentials
+ee_credentials.json
+.earthengine_credentials
+
 # Raw and large derived data
 data/raw/
 # Extracted LandIQ shapefiles (large; reproducible from ZIP under raw)
 data/derived/landiq_extracted/
 # Filtered tomato GPKG (reproducible via filter notebook / CLI)
 data/derived/landiq_tomato/
+# Alpha Earth / EE GeoTIFF exports (can be large)
+data/derived/alpha_earth_clips/
+data/derived/alpha_earth_rasters/
 
 # Python packaging
 *.egg-info/

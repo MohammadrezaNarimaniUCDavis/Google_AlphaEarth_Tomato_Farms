@@ -67,7 +67,7 @@ python -m src.landiq.filter_tomato
 
 ### Step 1 — Understand LandIQ shapefiles
 
-- **By survey year:** [`notebooks/landiq/years/`](notebooks/landiq/years/README.md) — e.g. [`01_2016_explore…`](notebooks/landiq/years/2016/01_2016_explore_shapefile_and_tomato_codes.ipynb) (T15 / T26) and [`years/shared/explore_landiq_year.ipynb`](notebooks/landiq/years/shared/explore_landiq_year.ipynb) for any year.
+- **By survey year:** [`notebooks/landiq/years/`](notebooks/landiq/years/README.md) — e.g. [`01_2018_explore…`](notebooks/landiq/years/2018/01_2018_explore_shapefile_and_tomato_codes.ipynb) (T15 / T26) and [`years/shared/explore_landiq_year.ipynb`](notebooks/landiq/years/shared/explore_landiq_year.ipynb) for any year.
 
 **Record** the column name and the **exact** tomato code(s) (strings or integers).
 
@@ -75,15 +75,14 @@ python -m src.landiq.filter_tomato
 
 1. Copy [`configs/paths.example.yaml`](configs/paths.example.yaml) to `configs/paths.local.yaml`.
 2. Set `landiq.tomato_values` and either **`landiq.crop_columns`** (list, OR across slots such as `CROPTYP1`–`3`) or **`landiq.crop_column`** (single). Adjust `landiq.shapefile_glob` if needed.
-3. Run [`notebooks/landiq/years/2016/02_filter_tomato_polygons.ipynb`](notebooks/landiq/years/2016/02_filter_tomato_polygons.ipynb) or `python -m src.landiq.filter_tomato` (set `landiq.year` in config for other vintages).
+3. Run [`notebooks/landiq/years/2018/02_filter_tomato_polygons.ipynb`](notebooks/landiq/years/2018/02_filter_tomato_polygons.ipynb) or `python -m src.landiq.filter_tomato` (set `landiq.year` in config for other vintages).
 4. Confirm output under `data/derived/landiq_tomato/` (default `landiq_tomato_<year>.gpkg` when `landiq.year` is set, or `landiq.output_filename`). Tomato rows retain **all** LandIQ attribute columns. Document CRS, vintage, and any area filters you applied.
 
-### Step 3 — Clip Alpha Earth (2015–2025)
+### Step 3 — Alpha Earth embeddings (Earth Engine or local rasters)
 
-1. Obtain or export **per-year** rasters (or stacks) aligned with your study.
-2. Place them in a folder you control (example in notebook: `data/derived/alpha_earth_rasters/`).
-3. Implement `load_raster_for_year` in [`src/alpha_earth/clip_to_polygons.py`](src/alpha_earth/clip_to_polygons.py) to match your naming convention.
-4. Run [`notebooks/alpha_earth/01_clip_alpha_earth.ipynb`](notebooks/alpha_earth/01_clip_alpha_earth.ipynb). Clips default to `data/derived/alpha_earth_clips/` (configurable in YAML).
+**Option A — Google Earth Engine (Satellite Embedding / AlphaEarth):** Run the survey-year pilot, e.g. [`notebooks/alpha_earth/earth_engine/years/2018/01_pilot_landiq2018_alphaearth_ee.ipynb`](notebooks/alpha_earth/earth_engine/years/2018/01_pilot_landiq2018_alphaearth_ee.ipynb). Configure `alpha_earth.gee` in `configs/paths.local.yaml` (`embedding_year` should align with `landiq.year` when possible). The [GEE collection](https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_SATELLITE_EMBEDDING_V1_ANNUAL) has **64 bands** (`A00`–`A63`, 10 m) from **2017** onward (match **2018** LandIQ with **`embedding_year: 2018`**). Interactive browsing: [leafmap AlphaEarth](https://leafmap.org/maplibre/AlphaEarth/). See [`earth_engine/years/README.md`](notebooks/alpha_earth/earth_engine/years/README.md).
+
+**Option B — Local GeoTIFFs:** Place each year’s stack under `data/derived/alpha_earth_rasters/<YEAR>/` (see `alpha_earth.local_raster_root`), then run the survey-year notebook, e.g. [`notebooks/alpha_earth/years/2018/01_clip_local_alphaearth_2018_tomato.ipynb`](notebooks/alpha_earth/years/2018/01_clip_local_alphaearth_2018_tomato.ipynb). Outputs: `data/derived/alpha_earth_clips/local/landiq<YEAR>/` (EE pilots use `…/ee/landiq<YEAR>/…`). Resolver logic: [`src/alpha_earth/clip_to_polygons.py`](src/alpha_earth/clip_to_polygons.py).
 
 ### Step 4 — Splits for deep learning
 

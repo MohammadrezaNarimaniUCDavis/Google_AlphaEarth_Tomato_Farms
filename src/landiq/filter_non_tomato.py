@@ -111,12 +111,76 @@ def _balanced_sample_by_group(
     return out
 
 
+def _area_series_m2(
+    gdf: gpd.GeoDataFrame,
+    *,
+    preferred_columns: list[str] | None = None,
+) -> pd.Series:
+    """Return per-row area in m^2.
+
+    Prefers an existing attribute column like LandIQ's ``Shape_STAr`` when present.
+    Falls back to geometry area computed in EPSG:3310 (California Albers) when needed.
+    """
+    cols = preferred_columns or ["Shape_STAr", "Shape_Area", "SHAPE_Area", "AREA"]
+    for c in cols:
+        if c in gdf.columns:
+            s = pd.to_numeric(gdf[c], errors="coerce")
+            if s.notna().any():
+                return s
+
+    # Fallback: compute from geometry (projected CRS required).
+    if gdf.crs is None:
+        raise ValueError("GeoDataFrame has no CRS and no usable area attribute column.")
+    return gdf.to_crs(3310).geometry.area
+
+
+def _drop_huge_polygons(
+    non_df: gpd.GeoDataFrame,
+    *,
+    max_area_m2: float | None,
+    max_area_quantile: float | None,
+    area_preferred_columns: list[str] | None = None,
+) -> tuple[gpd.GeoDataFrame, dict[str, Any]]:
+    """Drop extreme area outliers before sampling negatives."""
+    area_m2 = _area_series_m2(non_df, preferred_columns=area_preferred_columns)
+
+    info: dict[str, Any] = {
+        "area_column_used": next((c for c in (area_preferred_columns or ["Shape_STAr"]) if c in non_df.columns), None),
+        "area_non_null": int(area_m2.notna().sum()),
+        "dropped_by_abs": 0,
+        "dropped_by_q": 0,
+        "threshold_abs_m2": max_area_m2,
+        "threshold_q": max_area_quantile,
+        "threshold_q_m2": None,
+    }
+
+    keep = area_m2.notna()
+
+    if max_area_quantile is not None:
+        if not (0 < float(max_area_quantile) < 1):
+            raise ValueError("max_area_quantile must be between 0 and 1 (e.g. 0.995)")
+        thr_q = float(area_m2.quantile(float(max_area_quantile)))
+        info["threshold_q_m2"] = float(thr_q)
+        before = int(keep.sum())
+        keep &= area_m2 <= thr_q
+        info["dropped_by_q"] = before - int(keep.sum())
+
+    if max_area_m2 is not None:
+        before = int(keep.sum())
+        keep &= area_m2 <= float(max_area_m2)
+        info["dropped_by_abs"] = before - int(keep.sum())
+
+    return non_df.loc[keep].copy(), info
+
+
 def filter_non_tomatoes_from_landiq_config(
     gdf: gpd.GeoDataFrame,
     landiq_cfg: dict[str, Any],
     *,
     target_n: int | None = None,
     seed: int = 42,
+    max_area_m2: float | None = 10_000_000.0,
+    max_area_quantile: float | None = 0.995,
 ) -> gpd.GeoDataFrame:
     """Return a balanced non-tomato (negative) GeoDataFrame.
 
@@ -148,6 +212,18 @@ def filter_non_tomatoes_from_landiq_config(
 
     if target_n is None:
         target_n = tomato_n
+
+    non_df, drop_info = _drop_huge_polygons(
+        non_df,
+        max_area_m2=max_area_m2,
+        max_area_quantile=max_area_quantile,
+        area_preferred_columns=["Shape_STAr", "Shape_Area", "SHAPE_Area"],
+    )
+    if target_n > len(non_df):
+        raise ValueError(
+            f"After dropping huge polygons, available non-tomato rows={len(non_df)} < target_n={target_n}. "
+            f"Relax max_area_m2/max_area_quantile. Details: {drop_info}"
+        )
 
     # Group assignment for negatives.
     groups = non_df.apply(lambda r: _dwr_group_for_row(r, crop_columns, tomato_vals), axis=1)

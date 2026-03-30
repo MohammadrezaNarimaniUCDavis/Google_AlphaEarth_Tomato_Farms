@@ -60,3 +60,6 @@ modeling/**/checkpoints/
 # OS
 .DS_Store
 Thumbs.db
+
+# Cursor IDE (machine-specific profiles / local overrides)
+.cursor/

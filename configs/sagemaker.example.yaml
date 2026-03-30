@@ -1,4 +1,6 @@
 # Example SageMaker job settings (no secrets). Copy and adapt locally if needed.
+#
+# One-click notebook + bucket (CloudFormation): see infra/README.md and infra/sagemaker-notebook.yaml
 
 role_arn: "arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_SAGEMAKER_ROLE"
 region: "us-west-2"

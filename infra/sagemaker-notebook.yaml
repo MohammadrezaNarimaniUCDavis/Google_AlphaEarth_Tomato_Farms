@@ -1,0 +1,76 @@
+# Creates: project S3 bucket + IAM role + SageMaker Notebook Instance (GPU).
+# Deploy from repo root (see infra/README.md). Requires AWS CLI + credentials.
+#
+# Deleting the CloudFormation stack removes the notebook instance (compute stops;
+# the S3 bucket is Retained so your data stays unless you empty/delete it).
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Tomato/AlphaEarth - SageMaker notebook (ml.g4dn.xlarge) + project data bucket
+
+Parameters:
+  NotebookInstanceName:
+    Type: String
+    Default: digitalaglab-tomato-alphaearth
+    Description: Must be unique in the region. Change if a failed console attempt left the same name.
+  InstanceType:
+    Type: String
+    Default: ml.g4dn.xlarge
+  VolumeSizeInGB:
+    Type: Number
+    Default: 50
+    MinValue: 5
+    MaxValue: 16384
+
+Resources:
+  ProjectDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "tomato-alphaearth-${AWS::AccountId}-data"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  NotebookExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSageMakerFullAccess"
+
+  NotebookInstance:
+    Type: AWS::SageMaker::NotebookInstance
+    Properties:
+      NotebookInstanceName: !Ref NotebookInstanceName
+      InstanceType: !Ref InstanceType
+      RoleArn: !GetAtt NotebookExecutionRole.Arn
+      VolumeSizeInGB: !Ref VolumeSizeInGB
+      PlatformIdentifier: notebook-al2-v3
+      RootAccess: Enabled
+      DirectInternetAccess: Enabled
+      InstanceMetadataServiceConfiguration:
+        MinimumInstanceMetadataServiceVersion: 2
+
+Outputs:
+  ProjectDataBucketName:
+    Description: Upload datasets and artifacts here (same region as notebook)
+    Value: !Ref ProjectDataBucket
+  NotebookInstanceNameOut:
+    Description: Open this name in SageMaker > Notebook instances
+    Value: !Ref NotebookInstance
+  ExecutionRoleArn:
+    Description: SageMaker execution role ARN
+    Value: !GetAtt NotebookExecutionRole.Arn

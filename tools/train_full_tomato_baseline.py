@@ -33,7 +33,7 @@ from src.utils.paths import REPO_ROOT, load_paths_config
 class TrainConfig:
     index_path: Path
     run_name: str = "baseline"
-    epochs: int = 10
+    epochs: int = 3
     batch_size: int = 8
     lr: float = 1e-3
     lambda_chip: float = 1.0
@@ -174,7 +174,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Train baseline tomato vs non_tomato model.")
     parser.add_argument("--index-path", type=str, default=None, help="Override path to chips_index parquet/csv.")
     parser.add_argument("--run-name", type=str, default="baseline", help="Short name for this run.")
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--lambda-chip", type=float, default=1.0)

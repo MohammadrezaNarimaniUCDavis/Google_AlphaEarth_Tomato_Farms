@@ -48,6 +48,44 @@ def _label_for_path(p: Path) -> str:
     return "tomato"
 
 
+def _chip_level_balanced_splits(
+    df: pd.DataFrame,
+    train_frac: float = 0.7,
+    val_frac: float = 0.15,
+    seed: int = 1337,
+) -> Tuple[List[int], List[int], List[int]]:
+    """Original chip-level balanced splitting (fallback if grouping fails)."""
+    tomato = df.index[df["class_label"] == "tomato"].tolist()
+    non_tomato = df.index[df["class_label"] == "non_tomato"].tolist()
+    rng = random.Random(seed)
+    rng.shuffle(tomato)
+    rng.shuffle(non_tomato)
+
+    n_per_class = min(len(tomato), len(non_tomato))
+    if n_per_class == 0:
+        return [], [], []
+
+    n_train = int(train_frac * n_per_class)
+    n_val = int(val_frac * n_per_class)
+    n_test = n_per_class - n_train - n_val
+
+    tomato_use = tomato[:n_per_class]
+    non_use = non_tomato[:n_per_class]
+
+    def take_slices(idxs: List[int]) -> Tuple[List[int], List[int], List[int]]:
+        tr = idxs[:n_train]
+        va = idxs[n_train : n_train + n_val]
+        te = idxs[n_train + n_val : n_train + n_val + n_test]
+        return tr, va, te
+
+    t_tr, t_va, t_te = take_slices(tomato_use)
+    n_tr, n_va, n_te = take_slices(non_use)
+    train = sorted(t_tr + n_tr)
+    val = sorted(t_va + n_va)
+    test = sorted(t_te + n_te)
+    return train, val, test
+
+
 def _group_balanced_splits(
     df: pd.DataFrame,
     group_col: str,
@@ -57,29 +95,39 @@ def _group_balanced_splits(
 ) -> Tuple[List[int], List[int], List[int]]:
     """Return index lists for train/val/test with group-wise splits and class balance.
 
-    We first group chips by ``group_col`` (e.g. polygon_id), then treat each group as
-    an atomic unit when assigning to train/val/test. Within each class we assign
-    whole groups so that no group is split across folds. Finally we take the same
-    *number of groups* per class to keep splits approximately balanced.
+    If grouping cannot produce both classes, we fall back to chip-level splitting.
     """
     rng = random.Random(seed)
 
     # Determine class for each group by majority vote.
     group_labels: Dict[object, str] = {}
     for g, sub in df.groupby(group_col):
-        # If a group somehow mixes labels, we take the majority.
         label_counts = sub["class_label"].value_counts()
         label = label_counts.idxmax()
-        group_labels[g] = str(label)
+        lab_norm = str(label).strip().lower()
+        if "non_tomato" in lab_norm:
+            lab_class = "non_tomato"
+        elif "tomato" in lab_norm:
+            lab_class = "tomato"
+        else:
+            continue
+        group_labels[g] = lab_class
 
     # Separate groups by class.
     tomato_groups = [g for g, lab in group_labels.items() if lab == "tomato"]
     non_groups = [g for g, lab in group_labels.items() if lab == "non_tomato"]
 
+    # If we somehow lost a class, fall back to chip-level splits.
+    if not tomato_groups or not non_groups:
+        return _chip_level_balanced_splits(df, train_frac=train_frac, val_frac=val_frac, seed=seed)
+
     rng.shuffle(tomato_groups)
     rng.shuffle(non_groups)
 
     n_groups_per_class = min(len(tomato_groups), len(non_groups))
+    if n_groups_per_class == 0:
+        return _chip_level_balanced_splits(df, train_frac=train_frac, val_frac=val_frac, seed=seed)
+
     tomato_use = tomato_groups[:n_groups_per_class]
     non_use = non_groups[:n_groups_per_class]
 

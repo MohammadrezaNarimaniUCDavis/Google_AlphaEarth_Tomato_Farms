@@ -17,7 +17,7 @@ from torch import Tensor, nn
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_ch: int, out_ch: int, dropout_p: float = 0.1) -> None:
+    def __init__(self, in_ch: int, out_ch: int, dropout_p: float = 0.3) -> None:
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1, bias=False),
@@ -44,7 +44,7 @@ class AlphaEarthTomatoModel(nn.Module):
         chip_logits:  (B,)           – per-chip tomato logit
     """
 
-    def __init__(self, in_channels: int = 64, base_channels: int = 32, dropout_p: float = 0.1) -> None:
+    def __init__(self, in_channels: int = 64, base_channels: int = 32, dropout_p: float = 0.3) -> None:
         super().__init__()
 
         self.encoder = nn.Sequential(

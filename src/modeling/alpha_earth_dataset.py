@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -109,4 +109,17 @@ class AlphaEarthChipsDataset(Dataset):
         }
 
         return ChipSample(image=image, valid_mask=valid_mask, label=label, meta=meta)
+
+
+def collate_chips(batch: List[ChipSample]) -> ChipSample:
+    """Collate function to batch ChipSample objects for a DataLoader.
+
+    Returns a ChipSample where ``image``, ``valid_mask`` and ``label`` are
+    batched tensors and ``meta`` is a list of per-item metadata dicts.
+    """
+    images = torch.stack([b.image for b in batch], dim=0)  # (B, C, H, W)
+    masks = torch.stack([b.valid_mask for b in batch], dim=0)  # (B, 1, H, W)
+    labels = torch.stack([b.label for b in batch], dim=0)  # (B,)
+    metas: List[Dict[str, Any]] = [b.meta for b in batch]
+    return ChipSample(image=images, valid_mask=masks, label=labels, meta=metas)
 

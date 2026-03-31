@@ -105,6 +105,10 @@ def train_one_epoch(
 
     for phase in ("train", "val"):
         loader = loaders[phase]
+        dataset_size = len(loader.dataset)
+        n_total_batches = len(loader)
+        print(f"  {phase}: {dataset_size} samples, {n_total_batches} batches")
+
         if phase == "train":
             model.train(True)
         else:
@@ -114,7 +118,10 @@ def train_one_epoch(
         running_chip_acc = 0.0
         n_batches = 0
 
-        for batch in loader:
+        # Print progress roughly 10 times per epoch per phase.
+        print_every = max(1, n_total_batches // 10)
+
+        for batch_idx, batch in enumerate(loader, start=1):
             x = batch.image.to(device)
             mask = batch.valid_mask.to(device)
             y = batch.label.to(device).float()  # (B,)
@@ -143,6 +150,12 @@ def train_one_epoch(
             running_loss += loss.item()
             running_chip_acc += acc
             n_batches += 1
+
+            if batch_idx == 1 or batch_idx % print_every == 0 or batch_idx == n_total_batches:
+                print(
+                    f"    [{phase}] batch {batch_idx}/{n_total_batches} "
+                    f"loss={loss.item():.4f} chip_acc={acc:.3f}"
+                )
 
         avg_loss = running_loss / max(1, n_batches)
         avg_acc = running_chip_acc / max(1, n_batches)

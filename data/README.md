@@ -36,3 +36,7 @@ Do not commit raw imagery or Alpha Earth exports unless your license allows it a
 ## `splits/`
 
 Train, validation, and test definitions for deep learning (e.g. CSV of polygon IDs, GeoJSON subsets, or manifest files). Prefer **spatially** or **temporally** disjoint splits that match your paper’s claims.
+
+## `s3/` (documentation only)
+
+This folder holds **no binary data** in Git — only docs. The canonical S3 key layout for SageMaker (bucket + `google-alphaearth-tomato-farms/` prefix) is in **[`s3/README.md`](s3/README.md)**. Values are also reflected under **`s3:`** in **`configs/paths.example.yaml`** and helpers in **`src/utils/s3_layout.py`**.

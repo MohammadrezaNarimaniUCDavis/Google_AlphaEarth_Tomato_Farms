@@ -56,3 +56,24 @@ alpha_earth:
     pilot_polygon_count: null
 
 figures_dir: "figures"
+
+# -----------------------------------------------------------------------------
+# Amazon S3 — mirror of data/ for SageMaker / multi-machine workflows
+# Bucket is created by infra/sagemaker-notebook.yaml (pattern below) or use your own.
+# Layout is documented in data/s3/README.md
+# -----------------------------------------------------------------------------
+s3:
+  # e.g. tomato-alphaearth-054037103012-data — replace ACCOUNT_ID with yours
+  bucket: "tomato-alphaearth-YOUR_ACCOUNT_ID-data"
+  region: "us-west-2"
+  # All project objects live under this prefix inside the bucket (no leading/trailing /)
+  project_root_prefix: "google-alphaearth-tomato-farms"
+  # Logical categories → path under project_root_prefix (mirror local data/ where possible)
+  keys:
+    raw_landiq: "raw/landiq"
+    derived_tomato: "derived/landiq_tomato"
+    derived_non_tomato: "derived/landiq_non_tomato"
+    alpha_earth_clips: "derived/alpha_earth_clips"
+    manifests: "manifests"
+    models: "models"
+    splits: "splits"

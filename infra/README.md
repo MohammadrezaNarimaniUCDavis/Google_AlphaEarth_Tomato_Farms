@@ -4,7 +4,7 @@ AWS cannot be configured from GitHub or from this repo automatically. Use this t
 
 ## What it creates
 
-- **S3 bucket** `tomato-alphaearth-<ACCOUNT_ID>-data` (retained if you delete the stack)
+- **S3 bucket** `tomato-alphaearth-<ACCOUNT_ID>-data` (retained if you delete the stack). Use prefix **`google-alphaearth-tomato-farms/`** inside it for this repo — see **`data/s3/README.md`** and **`configs/paths.example.yaml`** → `s3:`.
 - **IAM role** with **AmazonSageMakerFullAccess** (same broad access as the console “easy” path)
 - **Notebook instance** `digitalaglab-tomato-alphaearth`, **ml.g4dn.xlarge**, **50 GB**, **JupyterLab 4** (`notebook-al2-v3`), **IMDSv2**
 

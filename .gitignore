@@ -63,3 +63,6 @@ Thumbs.db
 
 # Cursor IDE (machine-specific profiles / local overrides)
 .cursor/
+
+# Optional: one-line AWS profile name for tools/aws-preflight/show-aws-context.ps1
+tools/aws-preflight/.default-profile

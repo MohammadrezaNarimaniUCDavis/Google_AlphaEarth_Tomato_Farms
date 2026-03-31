@@ -66,3 +66,6 @@ Thumbs.db
 
 # Optional: one-line AWS profile name for tools/aws-preflight/show-aws-context.ps1
 tools/aws-preflight/.default-profile
+
+# Training logs
+logs/

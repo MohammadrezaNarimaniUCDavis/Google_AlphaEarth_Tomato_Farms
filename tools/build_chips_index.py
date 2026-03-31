@@ -18,7 +18,7 @@ from __future__ import annotations
 import argparse
 import random
 from pathlib import Path
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Tuple, Dict
 
 import pandas as pd
 
@@ -48,43 +48,63 @@ def _label_for_path(p: Path) -> str:
     return "tomato"
 
 
-def _balanced_splits(
-    tomato: List[int],
-    non_tomato: List[int],
+def _group_balanced_splits(
+    df: pd.DataFrame,
+    group_col: str,
     train_frac: float = 0.7,
     val_frac: float = 0.15,
     seed: int = 1337,
 ) -> Tuple[List[int], List[int], List[int]]:
-    """Return index lists for train, val, test with equal tomato/non_tomato counts.
+    """Return index lists for train/val/test with group-wise splits and class balance.
 
-    We assume tomato + non_tomato are disjoint index sets into the same chips list.
+    We first group chips by ``group_col`` (e.g. polygon_id), then treat each group as
+    an atomic unit when assigning to train/val/test. Within each class we assign
+    whole groups so that no group is split across folds. Finally we take the same
+    *number of groups* per class to keep splits approximately balanced.
     """
     rng = random.Random(seed)
-    rng.shuffle(tomato)
-    rng.shuffle(non_tomato)
 
-    # Use only the min class count to keep splits perfectly balanced.
-    n_per_class = min(len(tomato), len(non_tomato))
-    n_train = int(train_frac * n_per_class)
-    n_val = int(val_frac * n_per_class)
-    n_test = n_per_class - n_train - n_val
+    # Determine class for each group by majority vote.
+    group_labels: Dict[object, str] = {}
+    for g, sub in df.groupby(group_col):
+        # If a group somehow mixes labels, we take the majority.
+        label_counts = sub["class_label"].value_counts()
+        label = label_counts.idxmax()
+        group_labels[g] = str(label)
 
-    tomato_use = tomato[:n_per_class]
-    non_use = non_tomato[:n_per_class]
+    # Separate groups by class.
+    tomato_groups = [g for g, lab in group_labels.items() if lab == "tomato"]
+    non_groups = [g for g, lab in group_labels.items() if lab == "non_tomato"]
 
-    def take_slices(idxs: List[int]) -> Tuple[List[int], List[int], List[int]]:
-        tr = idxs[:n_train]
-        va = idxs[n_train : n_train + n_val]
-        te = idxs[n_train + n_val : n_train + n_val + n_test]
+    rng.shuffle(tomato_groups)
+    rng.shuffle(non_groups)
+
+    n_groups_per_class = min(len(tomato_groups), len(non_groups))
+    tomato_use = tomato_groups[:n_groups_per_class]
+    non_use = non_groups[:n_groups_per_class]
+
+    def assign_groups(gs: List[object]) -> Tuple[List[object], List[object], List[object]]:
+        n_total = len(gs)
+        n_train = int(train_frac * n_total)
+        n_val = int(val_frac * n_total)
+        n_test = n_total - n_train - n_val
+        tr = gs[:n_train]
+        va = gs[n_train : n_train + n_val]
+        te = gs[n_train + n_val : n_train + n_val + n_test]
         return tr, va, te
 
-    t_tr, t_va, t_te = take_slices(tomato_use)
-    n_tr, n_va, n_te = take_slices(non_use)
+    t_tr, t_va, t_te = assign_groups(tomato_use)
+    n_tr, n_va, n_te = assign_groups(non_use)
 
-    train = sorted(t_tr + n_tr)
-    val = sorted(t_va + n_va)
-    test = sorted(t_te + n_te)
-    return train, val, test
+    train_groups = set(t_tr + n_tr)
+    val_groups = set(t_va + n_va)
+    test_groups = set(t_te + n_te)
+
+    # Map back to chip indices.
+    train_idx = df.index[df[group_col].isin(train_groups)].tolist()
+    val_idx = df.index[df[group_col].isin(val_groups)].tolist()
+    test_idx = df.index[df[group_col].isin(test_groups)].tolist()
+    return train_idx, val_idx, test_idx
 
 
 def main() -> None:
@@ -118,6 +138,9 @@ def main() -> None:
                 "chip_id": p.stem,
                 "class_label": label,
                 "local_path": str(rel).replace("\\", "/"),
+                # Group all chips that share the same stem (e.g. from same polygon) together.
+                # If you have a more precise polygon ID in filenames, you can swap this out later.
+                "group_id": p.stem,
             }
         )
     df = pd.DataFrame(rows)
@@ -155,10 +178,15 @@ def main() -> None:
 
         df["s3_uri"] = df["local_path"].map(to_s3_uri)
 
-    # Build balanced splits.
-    tomato_idx = df.index[df["class_label"] == "tomato"].tolist()
-    non_idx = df.index[df["class_label"] == "non_tomato"].tolist()
-    train_idx, val_idx, test_idx = _balanced_splits(tomato_idx, non_idx, seed=args.seed)
+    # Build balanced splits, grouped by group_id so chips from the same group
+    # (e.g. polygon) never land in different folds.
+    train_idx, val_idx, test_idx = _group_balanced_splits(
+        df,
+        group_col="group_id",
+        train_frac=0.7,
+        val_frac=0.15,
+        seed=args.seed,
+    )
 
     split = pd.Series(index=df.index, dtype="object")
     split.loc[train_idx] = "train"

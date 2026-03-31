@@ -14,6 +14,7 @@ import pandas as pd
 import rasterio
 import torch
 from torch import Tensor
+from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 from src.utils.paths import REPO_ROOT, load_paths_config, resolve_under_root
@@ -114,12 +115,38 @@ class AlphaEarthChipsDataset(Dataset):
 def collate_chips(batch: List[ChipSample]) -> ChipSample:
     """Collate function to batch ChipSample objects for a DataLoader.
 
+    Chips can have different spatial sizes, so we pad them in each batch to
+    the maximum H and W in that batch. ``valid_mask`` is padded with False
+    so loss terms can ignore padded pixels if desired.
+
     Returns a ChipSample where ``image``, ``valid_mask`` and ``label`` are
     batched tensors and ``meta`` is a list of per-item metadata dicts.
     """
-    images = torch.stack([b.image for b in batch], dim=0)  # (B, C, H, W)
-    masks = torch.stack([b.valid_mask for b in batch], dim=0)  # (B, 1, H, W)
+    # Determine target spatial size for this batch.
+    heights = [b.image.shape[-2] for b in batch]
+    widths = [b.image.shape[-1] for b in batch]
+    max_h = max(heights)
+    max_w = max(widths)
+
+    padded_images: List[Tensor] = []
+    padded_masks: List[Tensor] = []
     labels = torch.stack([b.label for b in batch], dim=0)  # (B,)
+
+    for sample in batch:
+        img = sample.image
+        mask = sample.valid_mask
+        _, h, w = img.shape
+
+        pad_h = max_h - h
+        pad_w = max_w - w
+        # Pad as (left, right, top, bottom). We pad on the bottom and right only.
+        pad = (0, pad_w, 0, pad_h)
+
+        padded_images.append(F.pad(img, pad, mode="constant", value=0.0))
+        padded_masks.append(F.pad(mask, pad, mode="constant", value=0))  # False for padded area
+
+    images = torch.stack(padded_images, dim=0)  # (B, C, max_h, max_w)
+    masks = torch.stack(padded_masks, dim=0)  # (B, 1, max_h, max_w)
     metas: List[Dict[str, Any]] = [b.meta for b in batch]
     return ChipSample(image=images, valid_mask=masks, label=labels, meta=metas)
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import os
 import shutil
 import sys
@@ -83,6 +84,7 @@ def _eval_split(
     *,
     desc: str = "eval",
     show_progress: bool = True,
+    max_batches: int | None = None,
 ) -> tuple[dict[str, float], dict[str, Any]]:
     """Micro-averaged pixel metrics over the whole split; chip-level accuracy; confusion JSON."""
     model.eval()
@@ -90,16 +92,20 @@ def _eval_split(
     chip_ok = chip_n = 0
     loss_sum = 0.0
     n_batches = 0
-    it = loader
+    cap = max_batches if max_batches is not None else len(loader)
+    loader_iter: Any = itertools.islice(loader, cap) if max_batches is not None else loader
     if show_progress and not _env_tqdm_disabled():
         it = tqdm(
-            loader,
+            loader_iter,
             desc=desc,
+            total=min(cap, len(loader)) if max_batches is not None else len(loader),
             leave=False,
             mininterval=0.25,
             file=sys.stdout,
             dynamic_ncols=True,
         )
+    else:
+        it = loader_iter
     for batch in it:
         x = batch["x"].to(device)
         y = batch["y"].to(device)
@@ -224,11 +230,28 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
     pos_w = _pos_weight_from_df(df, "train", device) if use_pos_weight else None
 
     use_tqdm = bool(cfg.get("training", {}).get("tqdm", True)) and not _env_tqdm_disabled()
+
+    def _opt_cap(key: str) -> int | None:
+        v = cfg.get("training", {}).get(key)
+        if v is None or v == "":
+            return None
+        n = int(v)
+        return n if n > 0 else None
+
+    max_train_batches = _opt_cap("max_train_batches")
+    max_eval_batches = _opt_cap("max_eval_batches")
+
     _print_device_banner(device)
     print(
         f"Run: {run_id}  train chips={len(train_ds)}  val={len(val_ds)}  batch={bs}  epochs={epochs}",
         flush=True,
     )
+    if max_train_batches or max_eval_batches:
+        print(
+            f"SMOKE / SUBSET: max_train_batches={max_train_batches} max_eval_batches={max_eval_batches} "
+            f"(metrics are on partial data only — use full config for real training)",
+            flush=True,
+        )
 
     metrics_csv = exp_dir / "metrics_epoch.csv"
     best_val = -1.0
@@ -237,11 +260,18 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
     for epoch in range(1, epochs + 1):
         model.train()
         train_losses = []
-        train_it: Any = train_loader
+        if max_train_batches is not None:
+            train_iter: Any = itertools.islice(train_loader, max_train_batches)
+            train_total = min(max_train_batches, len(train_loader))
+        else:
+            train_iter = train_loader
+            train_total = len(train_loader)
+        train_it: Any = train_iter
         if use_tqdm:
             train_it = tqdm(
-                train_loader,
+                train_iter,
                 desc=f"Epoch {epoch}/{epochs} train",
+                total=train_total,
                 mininterval=0.25,
                 file=sys.stdout,
                 dynamic_ncols=True,
@@ -279,6 +309,7 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
             dice_w,
             desc=f"Epoch {epoch} train [eval]",
             show_progress=use_tqdm,
+            max_batches=max_eval_batches,
         )
         print(f"Epoch {epoch}: running validation…", flush=True)
         val_m, val_conf = _eval_split(
@@ -290,6 +321,7 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
             dice_w,
             desc=f"Epoch {epoch} val",
             show_progress=use_tqdm,
+            max_batches=max_eval_batches,
         )
         row = {
             "epoch": epoch,
@@ -341,6 +373,7 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
             dice_w,
             desc="test",
             show_progress=use_tqdm,
+            max_batches=max_eval_batches,
         )
         write_json(exp_dir / "metrics_test.json", te)
         write_json(exp_dir / "confusion_test.json", test_conf)

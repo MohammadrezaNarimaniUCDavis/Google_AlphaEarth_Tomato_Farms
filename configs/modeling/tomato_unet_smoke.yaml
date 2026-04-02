@@ -1,0 +1,29 @@
+# Fast pipeline check: few batches from S3 + GPU, then train/val/test eval (capped).
+# Full training: configs/modeling/tomato_unet.yaml
+
+data:
+  chips_index_csv: "data/splits/chips_index.csv"
+  target_hw: [128, 128]
+
+model:
+  in_channels: 64
+  infer_in_channels: true
+  base_channels: 32
+  dropout_p: 0.1
+
+training:
+  epochs: 1
+  batch_size: 32
+  tqdm: true
+  num_workers: 0
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  bce_weight: 0.5
+  dice_weight: 0.5
+  use_pos_weight: true
+  # Only first N batches per phase (train loop + each eval split)
+  max_train_batches: 8
+  max_eval_batches: 8
+
+output:
+  experiments_dir: "outputs/experiments"

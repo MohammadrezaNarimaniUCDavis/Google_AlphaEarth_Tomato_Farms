@@ -13,7 +13,8 @@
 
 | Path | Role |
 |------|------|
-| `configs/modeling/tomato_unet.yaml` | Default training config |
+| `configs/modeling/tomato_unet.yaml` | Default full training config |
+| `configs/modeling/tomato_unet_smoke.yaml` | Fast S3+GPU check (`max_train_batches` / `max_eval_batches`) |
 | `src/modeling/` | Dataset, U-Net, losses, metrics, training loop |
 | `modeling/train/train.py` | CLI entry (`python modeling/train/train.py --config ...`) |
 | `outputs/experiments/<run_id>/` | Metrics, checkpoints (gitignored) |
@@ -24,6 +25,10 @@
 ```bash
 export PYTHONPATH=.
 python tools/build_chips_index.py
+# Quick check (~few minutes from S3):
+python modeling/train/train.py --config configs/modeling/tomato_unet_smoke.yaml
+# Or: python modeling/train/train.py --config configs/modeling/tomato_unet.yaml --smoke
+# Full run:
 python modeling/train/train.py --config configs/modeling/tomato_unet.yaml
 ```
 

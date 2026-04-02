@@ -43,12 +43,39 @@ def main() -> None:
         default=None,
         help="Override training.batch_size in config",
     )
+    ap.add_argument(
+        "--max-train-batches",
+        type=int,
+        default=None,
+        help="Cap training batches per epoch (smoke test; unset = full epoch)",
+    )
+    ap.add_argument(
+        "--max-eval-batches",
+        type=int,
+        default=None,
+        help="Cap batches for train-eval, val, and test passes (smoke test)",
+    )
+    ap.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Shorthand: 1 epoch, batch 32, 8 train + 8 eval batches (CLI overrides win)",
+    )
     args = ap.parse_args()
     cfg = load_yaml(args.config)
+    if args.smoke:
+        tr = cfg.setdefault("training", {})
+        tr["epochs"] = 1
+        tr.setdefault("batch_size", 32)
+        tr.setdefault("max_train_batches", 8)
+        tr.setdefault("max_eval_batches", 8)
     if args.epochs is not None:
         cfg.setdefault("training", {})["epochs"] = int(args.epochs)
     if args.batch_size is not None:
         cfg.setdefault("training", {})["batch_size"] = int(args.batch_size)
+    if args.max_train_batches is not None:
+        cfg.setdefault("training", {})["max_train_batches"] = int(args.max_train_batches)
+    if args.max_eval_batches is not None:
+        cfg.setdefault("training", {})["max_eval_batches"] = int(args.max_eval_batches)
     out = train_model(cfg, repo_root=_REPO_ROOT)
     print("Experiment dir:", out)
 

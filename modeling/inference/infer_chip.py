@@ -5,7 +5,7 @@ Examples::
 
     python modeling/inference/infer_chip.py \\
       --checkpoint outputs/experiments/<run_id>/best.pt \\
-      --row-index 0 --split val
+      --row-index 0 --split val --geotiff
 
     python modeling/inference/infer_chip.py \\
       --checkpoint outputs/experiments/<run_id>/best.pt \\
@@ -13,14 +13,13 @@ Examples::
 
 With local mirror (fast): ``export ALPHA_EARTH_DATA_SOURCE=auto``
 
-Outputs under ``--out-dir`` (default ``outputs/predictions/<run_name>/``): ``mean_prob.npz``,
-optional ``var_prob.npz``, ``aggregate.json``.
+Outputs under ``--out-dir``: ``mean_prob.npz``, optional ``var_prob.npz``, ``aggregate.json``,
+and with ``--geotiff``: ``pred_mean_prob.tif`` / ``pred_var_prob.tif`` (same bounds as source chip).
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -28,13 +27,12 @@ _REPO = Path(__file__).resolve().parents[2]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-import numpy as np
 import pandas as pd
 import torch
 
 from src.modeling.dataset import load_chip_for_model, load_chips_table
-from src.modeling.infer_io import load_checkpoint, predict_chip
-from src.modeling.aggregate import chip_aggregate
+from src.modeling.infer_io import load_checkpoint
+from src.modeling.infer_run import run_chip_forward, save_chip_outputs
 from src.utils.paths import REPO_ROOT
 
 
@@ -48,6 +46,7 @@ def main() -> None:
     ap.add_argument("--s3-uri", type=str, default=None, help="Optional s3:// URI if file not local")
     ap.add_argument("--mc-samples", type=int, default=0, help="MC dropout passes (0 = single eval forward)")
     ap.add_argument("--out-dir", type=Path, default=None, help="Output directory")
+    ap.add_argument("--geotiff", action="store_true", help="Write pred_mean_prob.tif (+ var if MC) georeferenced like source")
     args = ap.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -80,32 +79,32 @@ def main() -> None:
     else:
         raise SystemExit("Provide --local-path or --row-index")
 
-    x = tensors["x"]
-    mask = tensors["mask"]
-    xb = x.unsqueeze(0)
-    mean_p, var_p = predict_chip(model, xb, device, mc_samples=args.mc_samples)
+    mean_p, var_p = run_chip_forward(model, device, tensors, args.mc_samples)
 
     out_dir = args.out_dir
     if out_dir is None:
         out_dir = REPO_ROOT / "outputs" / "predictions" / args.checkpoint.parent.name
     out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
 
-    mp = mean_p.squeeze().cpu().numpy().astype(np.float32)
-    np.savez_compressed(out_dir / "mean_prob.npz", prob=mp)
-    if var_p is not None:
-        vp = var_p.squeeze().cpu().numpy().astype(np.float32)
-        np.savez_compressed(out_dir / "var_prob.npz", var=vp)
-    agg = chip_aggregate(mean_p, mask.unsqueeze(0), var_p)
-    meta = {
-        "chip_id": chip_id,
+    base_meta = {
         "checkpoint": str(args.checkpoint),
         "target_hw": list(target_hw),
         "mc_samples": int(args.mc_samples),
-        "aggregate": agg,
     }
-    (out_dir / "aggregate.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
-    print(json.dumps(meta, indent=2))
+    save_chip_outputs(
+        out_dir,
+        chip_id,
+        mean_p,
+        var_p,
+        tensors["mask"],
+        base_meta,
+        source_path=lp,
+        write_geotiff=args.geotiff,
+        flat_output=True,
+    )
+    agg_path = out_dir / "aggregate.json"
+    if agg_path.is_file():
+        print(agg_path.read_text(encoding="utf-8"))
     print("Wrote:", out_dir)
 
 

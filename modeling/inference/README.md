@@ -1,12 +1,10 @@
-# Inference
+# Inference CLIs
 
-## Chip-level (implemented)
+| Script | Purpose |
+|--------|---------|
+| **`infer_chip.py`** | One chip → NPZ + `aggregate.json` + optional GeoTIFF (`--geotiff`, needs local `.tif`). |
+| **`infer_batch.py`** | Many chips from `chips_index` split → subfolders + `batch_summary.json`. |
+| **`infer_tile.py`** | Large GeoTIFF → blended probability (and optional var) raster. |
+| **`zonal_stats.py`** | Polygons (GPKG/GeoJSON/shp) → CSV of mean/median/std per feature. |
 
-```bash
-python modeling/inference/infer_chip.py \
-  --checkpoint outputs/experiments/<run_id>/best.pt \
-  --row-index 0 --split val \
-  --mc-samples 20
-```
-
-See **`guide/04-inference-and-roadmap.md`** for outputs and next steps (GeoTIFF export, tiling, SageMaker batch transform).
+Full commands and S3 sync: **`guide/04-inference-and-roadmap.md`**.

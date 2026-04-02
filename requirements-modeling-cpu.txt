@@ -4,6 +4,7 @@
 #   pip install -e .
 
 rasterio>=1.3
+fiona>=1.9
 pandas>=2.0
 numpy>=1.24
 pyyaml>=6

@@ -50,6 +50,19 @@ def _env_tqdm_disabled() -> bool:
     return os.environ.get("TRAINING_NO_TQDM", "").strip().lower() in ("1", "true", "yes")
 
 
+def _dataloader_kwargs(num_workers: int, prefetch_factor: int | None) -> dict[str, Any]:
+    """Pin memory + optional parallel prefetch (num_workers>0 speeds S3/disk I/O vs GPU)."""
+    kw: dict[str, Any] = {
+        "num_workers": num_workers,
+        "pin_memory": torch.cuda.is_available(),
+    }
+    if num_workers > 0:
+        kw["persistent_workers"] = True
+        pf = int(prefetch_factor) if prefetch_factor is not None else 4
+        kw["prefetch_factor"] = max(2, pf)
+    return kw
+
+
 def _pos_weight_from_df(df, split: str, device: torch.device) -> torch.Tensor:
     sub = df[df["split"] == split]
     n_t = (sub["class_label"].str.lower() == "tomato").sum()
@@ -187,15 +200,14 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
 
     bs = int(cfg.get("training", {}).get("batch_size", 8))
     nw = int(cfg.get("training", {}).get("num_workers", 0))
-    train_loader = DataLoader(train_ds, batch_size=bs, shuffle=True, num_workers=nw, pin_memory=torch.cuda.is_available())
-    train_eval_loader = DataLoader(
-        train_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available()
-    )
-    val_loader = DataLoader(val_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available())
+    pf_raw = cfg.get("training", {}).get("prefetch_factor")
+    prefetch_factor: int | None = int(pf_raw) if pf_raw is not None else None
+    dl_kw = _dataloader_kwargs(nw, prefetch_factor)
+    train_loader = DataLoader(train_ds, batch_size=bs, shuffle=True, **dl_kw)
+    train_eval_loader = DataLoader(train_ds, batch_size=bs, shuffle=False, **dl_kw)
+    val_loader = DataLoader(val_ds, batch_size=bs, shuffle=False, **dl_kw)
     test_loader = (
-        DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available())
-        if test_ds is not None
-        else None
+        DataLoader(test_ds, batch_size=bs, shuffle=False, **dl_kw) if test_ds is not None else None
     )
 
     in_ch = int(cfg.get("model", {}).get("in_channels", 64))

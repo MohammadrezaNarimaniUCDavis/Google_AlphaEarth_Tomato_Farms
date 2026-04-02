@@ -18,7 +18,9 @@ training:
   batch_size: 8
   # Progress bars + per-batch loss in terminal (set false for log-only CI)
   tqdm: true
-  num_workers: 0
+  # Parallel data loading: overlaps S3/disk I/O with GPU (try 4–8; set 0 if multiprocessing errors)
+  num_workers: 4
+  prefetch_factor: 4
   learning_rate: 0.001
   weight_decay: 0.0001
   bce_weight: 0.5

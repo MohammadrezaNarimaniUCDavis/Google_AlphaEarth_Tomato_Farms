@@ -32,6 +32,10 @@ export ALPHA_EARTH_DATA_SOURCE=s3
 python modeling/train/train.py --config configs/modeling/tomato_unet.yaml
 ```
 
+**Fast smoke test** (few batches from S3 + full pipeline, ~5–7 min typical):  
+`python modeling/train/train.py --config configs/modeling/tomato_unet_smoke.yaml`  
+or `--smoke` with the main config. Remove `max_train_batches` / `max_eval_batches` (use `tomato_unet.yaml`) for **full** training.
+
 **Note:** **Open in Cursor** opens a **new** Cursor window attached to Studio; that is normal. Use that window for training; local window is optional.
 
 **If `git push` / `git pull` from Studio fails (no GitHub credentials):** use a **git bundle** from another machine, or copy the bundle from Studio’s persistent file system. Example rehydrate: `git clone /path/to/Google_AlphaEarth_Tomato_Farms-main-*.bundle ./Google_AlphaEarth_Tomato_Farms` then `cd Google_AlphaEarth_Tomato_Farms && git checkout main && git remote add origin https://github.com/.../Google_AlphaEarth_Tomato_Farms.git` for future pushes.

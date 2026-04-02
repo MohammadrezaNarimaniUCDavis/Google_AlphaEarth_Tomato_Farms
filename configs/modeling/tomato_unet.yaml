@@ -16,6 +16,8 @@ model:
 training:
   epochs: 30
   batch_size: 8
+  # Progress bars + per-batch loss in terminal (set false for log-only CI)
+  tqdm: true
   num_workers: 0
   learning_rate: 0.001
   weight_decay: 0.0001

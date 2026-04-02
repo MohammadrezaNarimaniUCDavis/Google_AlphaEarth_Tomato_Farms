@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from src.modeling.dataset import AlphaEarthChipSegDataset, load_chips_table
 from src.modeling.losses import combined_loss
@@ -26,6 +28,25 @@ from src.utils.paths import REPO_ROOT
 
 def _device() -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _print_device_banner(device: torch.device) -> None:
+    print("=" * 60, flush=True)
+    print(f"Device: {device}", flush=True)
+    if device.type == "cuda":
+        print(f"GPU: {torch.cuda.get_device_name(0)}", flush=True)
+        p = torch.cuda.get_device_properties(0)
+        print(
+            f"CUDA {p.major}.{p.minor}  Total VRAM: {p.total_memory / (1024**3):.2f} GiB",
+            flush=True,
+        )
+    else:
+        print("Warning: training on CPU — expect very slow runs.", flush=True)
+    print("=" * 60, flush=True)
+
+
+def _env_tqdm_disabled() -> bool:
+    return os.environ.get("TRAINING_NO_TQDM", "").strip().lower() in ("1", "true", "yes")
 
 
 def _pos_weight_from_df(df, split: str, device: torch.device) -> torch.Tensor:
@@ -59,6 +80,9 @@ def _eval_split(
     pos_weight: torch.Tensor | None,
     bce_w: float,
     dice_w: float,
+    *,
+    desc: str = "eval",
+    show_progress: bool = True,
 ) -> tuple[dict[str, float], dict[str, Any]]:
     """Micro-averaged pixel metrics over the whole split; chip-level accuracy; confusion JSON."""
     model.eval()
@@ -66,7 +90,17 @@ def _eval_split(
     chip_ok = chip_n = 0
     loss_sum = 0.0
     n_batches = 0
-    for batch in loader:
+    it = loader
+    if show_progress and not _env_tqdm_disabled():
+        it = tqdm(
+            loader,
+            desc=desc,
+            leave=False,
+            mininterval=0.25,
+            file=sys.stdout,
+            dynamic_ncols=True,
+        )
+    for batch in it:
         x = batch["x"].to(device)
         y = batch["y"].to(device)
         m = batch["mask"].to(device)
@@ -82,6 +116,8 @@ def _eval_split(
         chip_ok += co
         chip_n += cn
         n_batches += 1
+        if show_progress and not _env_tqdm_disabled() and isinstance(it, tqdm):
+            it.set_postfix(loss=f"{float(loss.item()):.4f}")
     if n_batches == 0:
         z: dict[str, float] = {
             "loss": 0.0,
@@ -187,6 +223,13 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
     use_pos_weight = bool(cfg.get("training", {}).get("use_pos_weight", True))
     pos_w = _pos_weight_from_df(df, "train", device) if use_pos_weight else None
 
+    use_tqdm = bool(cfg.get("training", {}).get("tqdm", True)) and not _env_tqdm_disabled()
+    _print_device_banner(device)
+    print(
+        f"Run: {run_id}  train chips={len(train_ds)}  val={len(val_ds)}  batch={bs}  epochs={epochs}",
+        flush=True,
+    )
+
     metrics_csv = exp_dir / "metrics_epoch.csv"
     best_val = -1.0
     best_path = exp_dir / "best.pt"
@@ -194,7 +237,16 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
     for epoch in range(1, epochs + 1):
         model.train()
         train_losses = []
-        for batch in train_loader:
+        train_it: Any = train_loader
+        if use_tqdm:
+            train_it = tqdm(
+                train_loader,
+                desc=f"Epoch {epoch}/{epochs} train",
+                mininterval=0.25,
+                file=sys.stdout,
+                dynamic_ncols=True,
+            )
+        for batch_idx, batch in enumerate(train_it):
             x = batch["x"].to(device)
             y = batch["y"].to(device)
             m = batch["mask"].to(device)
@@ -203,11 +255,42 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
             loss = combined_loss(logits, y, m, bce_weight=bce_w, dice_weight=dice_w, pos_weight=pos_w)
             loss.backward()
             opt.step()
-            train_losses.append(float(loss.item()))
+            li = float(loss.item())
+            train_losses.append(li)
+            if use_tqdm and isinstance(train_it, tqdm):
+                train_it.set_postfix(loss=f"{li:.4f}")
+            if epoch == 1 and batch_idx == 0 and device.type == "cuda":
+                torch.cuda.synchronize()
+                print(
+                    f"[GPU] After first training batch: allocated "
+                    f"{torch.cuda.memory_allocated() / (1024**3):.3f} GiB  "
+                    f"reserved {torch.cuda.memory_reserved() / (1024**3):.3f} GiB",
+                    flush=True,
+                )
         tr_loss = float(np.mean(train_losses)) if train_losses else 0.0
 
-        train_m, train_conf = _eval_split(model, train_eval_loader, device, pos_w, bce_w, dice_w)
-        val_m, val_conf = _eval_split(model, val_loader, device, pos_w, bce_w, dice_w)
+        print(f"Epoch {epoch}: running train-split eval (no gradients)…", flush=True)
+        train_m, train_conf = _eval_split(
+            model,
+            train_eval_loader,
+            device,
+            pos_w,
+            bce_w,
+            dice_w,
+            desc=f"Epoch {epoch} train [eval]",
+            show_progress=use_tqdm,
+        )
+        print(f"Epoch {epoch}: running validation…", flush=True)
+        val_m, val_conf = _eval_split(
+            model,
+            val_loader,
+            device,
+            pos_w,
+            bce_w,
+            dice_w,
+            desc=f"Epoch {epoch} val",
+            show_progress=use_tqdm,
+        )
         row = {
             "epoch": epoch,
             "train_loss_opt": tr_loss,
@@ -248,7 +331,17 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
         except TypeError:
             ckpt = torch.load(best_path, map_location=device)
         model.load_state_dict(ckpt["model"])
-        te, test_conf = _eval_split(model, test_loader, device, pos_w, bce_w, dice_w)
+        print("Running test split…", flush=True)
+        te, test_conf = _eval_split(
+            model,
+            test_loader,
+            device,
+            pos_w,
+            bce_w,
+            dice_w,
+            desc="test",
+            show_progress=use_tqdm,
+        )
         write_json(exp_dir / "metrics_test.json", te)
         write_json(exp_dir / "confusion_test.json", test_conf)
         test_row = {

@@ -5,7 +5,7 @@ derives class labels from folder names, creates balanced splits, and writes
 an index file to ``data/splits/chips_index.parquet`` (and CSV alongside it).
 
 It does **not** move or modify any data; it just records paths + labels.
-Run from the repo root:
+Run from the repo root (``PYTHONPATH`` must include the repo, e.g. ``set PYTHONPATH=.`` on Windows):
 
     python tools/build_chips_index.py
 

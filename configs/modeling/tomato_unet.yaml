@@ -1,0 +1,28 @@
+# Pixelwise tomato vs non-tomato training (AlphaEarth embedding GeoTIFF chips).
+# Paths are repo-relative unless you pass absolute paths from SageMaker.
+
+data:
+  chips_index_csv: "data/splits/chips_index.csv"
+  # Resize all chips to this H×W (embeddings vary in spatial size).
+  target_hw: [128, 128]
+
+model:
+  in_channels: 64
+  # If true, open first chip and set in_channels from band count (overrides in_channels).
+  infer_in_channels: true
+  base_channels: 32
+  dropout_p: 0.1
+
+training:
+  epochs: 30
+  batch_size: 8
+  num_workers: 0
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  bce_weight: 0.5
+  dice_weight: 0.5
+  use_pos_weight: true
+
+output:
+  experiments_dir: "outputs/experiments"
+  # run_id: null  # omit for UTC timestamp folder name

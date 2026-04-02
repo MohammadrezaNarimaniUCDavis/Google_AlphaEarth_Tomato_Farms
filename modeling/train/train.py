@@ -1,36 +1,45 @@
 #!/usr/bin/env python3
-"""SageMaker training entry point stub. Replace with real training loop."""
+"""Train tomato vs non-tomato pixelwise model (AlphaEarth chips).
+
+Run from repo root::
+
+    python modeling/train/train.py --config configs/modeling/tomato_unet.yaml
+
+On SageMaker, set ``SM_MODEL_DIR``; checkpoints and metrics are copied there.
+
+Environment:
+
+- ``ALPHA_EARTH_DATA_SOURCE``: ``auto`` (default), ``local``, or ``s3`` — how to open GeoTIFFs
+  (see ``src/modeling/io_paths.py``).
+"""
 
 from __future__ import annotations
 
 import argparse
-import json
-import os
+import sys
 from pathlib import Path
 
+# Repo root on sys.path (parent of ``modeling/``)
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
-    return parser.parse_args()
+from src.modeling.train_config import load_yaml
+from src.modeling.train_runner import train_model
 
 
-def main():
-    args = parse_args()
-    sm_model_dir = os.environ.get("SM_MODEL_DIR", "/tmp/model")
-    sm_channel_train = os.environ.get("SM_CHANNEL_TRAIN", "")
-    sm_channel_val = os.environ.get("SM_CHANNEL_VALIDATION", "")
-
-    print("Hyperparameters:", json.dumps(vars(args), indent=2))
-    print("SM_MODEL_DIR:", sm_model_dir)
-    print("SM_CHANNEL_TRAIN:", sm_channel_train)
-    print("SM_CHANNEL_VALIDATION:", sm_channel_val)
-
-    Path(sm_model_dir).mkdir(parents=True, exist_ok=True)
-    (Path(sm_model_dir) / "stub_model.txt").write_text("Replace with checkpoint save.\n", encoding="utf-8")
-    print("Stub training finished.")
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Train AlphaEarth tomato U-Net")
+    ap.add_argument(
+        "--config",
+        type=Path,
+        default=_REPO_ROOT / "configs" / "modeling" / "tomato_unet.yaml",
+        help="Path to modeling YAML",
+    )
+    args = ap.parse_args()
+    cfg = load_yaml(args.config)
+    out = train_model(cfg, repo_root=_REPO_ROOT)
+    print("Experiment dir:", out)
 
 
 if __name__ == "__main__":

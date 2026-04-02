@@ -37,6 +37,7 @@ Mirror your **local** `data/` layout under that prefix so paths are predictable:
 | manifests, train/val lists | `manifests/` |
 | model checkpoints | `models/` |
 | `data/splits/` | `splits/` |
+| training runs (metrics, optional mirror of `outputs/experiments/`) | `experiments/` |
 
 ## Upload / sync AlphaEarth clips (tomato + non-tomato TIFFs)
 

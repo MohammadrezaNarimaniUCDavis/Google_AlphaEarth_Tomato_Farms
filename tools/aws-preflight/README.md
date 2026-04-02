@@ -43,3 +43,21 @@ Mirrors **`data/derived/alpha_earth_clips/`** → **`s3://…/google-alphaearth-
 ```
 
 Dry-run: add **`-DryRun`**. Large first uploads can take hours; re-runs only send new/changed files.
+
+## Cursor → SageMaker Studio (prerequisites only)
+
+The Toolkit connection itself is **in Cursor** (GUI). From repo root, verify CLI / SSM plugin / SSH and list domains:
+
+```powershell
+.\tools\aws-preflight\check-cursor-sagemaker-prereqs.ps1
+```
+
+Step-by-step: **`guide/02-sagemaker-cursor-remote.md`**.
+
+If Session Manager is installed but **not on PATH**, run once:
+
+```powershell
+.\tools\aws-preflight\add-session-manager-to-path-user.ps1
+```
+
+Restart Cursor afterward. Domain / user profile snapshot: **`guide/02-sagemaker-cursor-remote.md`** (table at top).

@@ -51,6 +51,7 @@ def s3_layout_keys(cfg: dict[str, Any]) -> dict[str, str]:
         "manifests": "manifests",
         "models": "models",
         "splits": "splits",
+        "experiments": "experiments",
     }
     out = {**defaults, **{k: str(v).strip().strip("/") for k, v in keys.items() if v}}
     return out

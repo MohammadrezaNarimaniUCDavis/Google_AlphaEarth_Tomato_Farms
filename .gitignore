@@ -69,3 +69,6 @@ tools/aws-preflight/.default-profile
 
 # Training logs
 logs/
+
+# Local training runs (metrics JSON/CSV, checkpoints — regenerate on each machine)
+outputs/experiments/

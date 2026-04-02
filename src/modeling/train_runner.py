@@ -1,0 +1,194 @@
+"""Training loop for tomato U-Net on AlphaEarth chips."""
+
+from __future__ import annotations
+
+import os
+import shutil
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+
+from src.modeling.dataset import AlphaEarthChipSegDataset, load_chips_table
+from src.modeling.losses import combined_loss
+from src.modeling.metrics import pixel_binary_metrics
+from src.modeling.model import TomatoUNet
+from src.modeling.logging_utils import append_metrics_csv, write_json
+from src.utils.paths import REPO_ROOT
+
+
+def _device() -> torch.device:
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _pos_weight_from_df(df, split: str, device: torch.device) -> torch.Tensor:
+    sub = df[df["split"] == split]
+    n_t = (sub["class_label"].str.lower() == "tomato").sum()
+    n_n = (sub["class_label"].str.lower() == "non_tomato").sum()
+    n_n = max(int(n_n), 1)
+    n_t = max(int(n_t), 1)
+    w = float(n_n / n_t)
+    return torch.tensor([w], device=device, dtype=torch.float32)
+
+
+@torch.no_grad()
+def _eval_epoch(
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    pos_weight: torch.Tensor | None,
+    bce_w: float,
+    dice_w: float,
+) -> dict[str, float]:
+    model.eval()
+    totals: dict[str, float] = {}
+    n_batches = 0
+    for batch in loader:
+        x = batch["x"].to(device)
+        y = batch["y"].to(device)
+        m = batch["mask"].to(device)
+        logits = model(x)
+        loss = combined_loss(logits, y, m, bce_weight=bce_w, dice_weight=dice_w, pos_weight=pos_weight)
+        metrics = pixel_binary_metrics(logits, y, m)
+        metrics["loss"] = float(loss.item())
+        for k, v in metrics.items():
+            totals[k] = totals.get(k, 0.0) + v
+        n_batches += 1
+    if n_batches == 0:
+        return {k: 0.0 for k in ["loss", "acc", "precision", "recall", "iou"]}
+    return {k: totals[k] / n_batches for k in totals}
+
+
+def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
+    """Run full train/val; optional test. Returns experiment output directory."""
+    root = repo_root or REPO_ROOT
+
+    data_cfg = cfg.get("data", {})
+    chips_csv = root / str(data_cfg.get("chips_index_csv", "data/splits/chips_index.csv"))
+    df = load_chips_table(chips_csv)
+
+    out_root = root / str(cfg.get("output", {}).get("experiments_dir", "outputs/experiments"))
+    run_id = str(cfg.get("output", {}).get("run_id") or "")
+    if not run_id:
+        from src.modeling.logging_utils import utc_run_id
+
+        run_id = utc_run_id()
+    exp_dir = out_root / run_id
+    exp_dir.mkdir(parents=True, exist_ok=True)
+    write_json(exp_dir / "config_resolved.json", cfg)
+
+    target_hw = tuple(cfg.get("data", {}).get("target_hw", [128, 128]))
+    train_ds = AlphaEarthChipSegDataset(df, "train", target_hw, augment=True)
+    val_ds = AlphaEarthChipSegDataset(df, "val", target_hw, augment=False)
+    test_ds = AlphaEarthChipSegDataset(df, "test", target_hw, augment=False) if len(df[df["split"] == "test"]) else None
+
+    bs = int(cfg.get("training", {}).get("batch_size", 8))
+    nw = int(cfg.get("training", {}).get("num_workers", 0))
+    train_loader = DataLoader(train_ds, batch_size=bs, shuffle=True, num_workers=nw, pin_memory=torch.cuda.is_available())
+    val_loader = DataLoader(val_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available())
+    test_loader = (
+        DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available())
+        if test_ds is not None
+        else None
+    )
+
+    in_ch = int(cfg.get("model", {}).get("in_channels", 64))
+    if cfg.get("model", {}).get("infer_in_channels", True):
+        row0 = df.iloc[0]
+        from src.modeling.io_paths import resolve_raster_path
+        import pandas as pd
+
+        lp = row0["local_path"]
+        if "s3_uri" in row0.index and pd.notna(row0["s3_uri"]) and str(row0["s3_uri"]).strip().startswith("s3://"):
+            su = str(row0["s3_uri"]).strip()
+        else:
+            su = None
+        rpath = resolve_raster_path(lp, su)
+        import rasterio
+
+        with rasterio.open(rpath) as ds:
+            in_ch = int(ds.count)
+
+    device = _device()
+    dropout_p = float(cfg.get("model", {}).get("dropout_p", 0.1))
+    base = int(cfg.get("model", {}).get("base_channels", 32))
+    model = TomatoUNet(in_channels=in_ch, base=base, dropout_p=dropout_p).to(device)
+
+    lr = float(cfg.get("training", {}).get("learning_rate", 1e-3))
+    wd = float(cfg.get("training", {}).get("weight_decay", 1e-4))
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+    epochs = int(cfg.get("training", {}).get("epochs", 30))
+    bce_w = float(cfg.get("training", {}).get("bce_weight", 0.5))
+    dice_w = float(cfg.get("training", {}).get("dice_weight", 0.5))
+    use_pos_weight = bool(cfg.get("training", {}).get("use_pos_weight", True))
+    pos_w = _pos_weight_from_df(df, "train", device) if use_pos_weight else None
+
+    metrics_csv = exp_dir / "metrics_epoch.csv"
+    best_val = -1.0
+    best_path = exp_dir / "best.pt"
+
+    for epoch in range(1, epochs + 1):
+        model.train()
+        train_losses = []
+        for batch in train_loader:
+            x = batch["x"].to(device)
+            y = batch["y"].to(device)
+            m = batch["mask"].to(device)
+            opt.zero_grad(set_to_none=True)
+            logits = model(x)
+            loss = combined_loss(logits, y, m, bce_weight=bce_w, dice_weight=dice_w, pos_weight=pos_w)
+            loss.backward()
+            opt.step()
+            train_losses.append(float(loss.item()))
+        tr_loss = float(np.mean(train_losses)) if train_losses else 0.0
+
+        val_m = _eval_epoch(model, val_loader, device, pos_w, bce_w, dice_w)
+        row = {
+            "epoch": epoch,
+            "split": "val",
+            "train_loss": tr_loss,
+            "loss": val_m["loss"],
+            "acc": val_m["acc"],
+            "precision": val_m["precision"],
+            "recall": val_m["recall"],
+            "iou": val_m["iou"],
+        }
+        append_metrics_csv(metrics_csv, row)
+        print(f"Epoch {epoch}/{epochs} train_loss={tr_loss:.4f} val_iou={val_m['iou']:.4f} val_loss={val_m['loss']:.4f}")
+
+        if val_m["iou"] > best_val:
+            best_val = val_m["iou"]
+            torch.save({"model": model.state_dict(), "epoch": epoch, "cfg": cfg}, best_path)
+
+        last_path = exp_dir / "last.pt"
+        torch.save({"model": model.state_dict(), "epoch": epoch, "cfg": cfg}, last_path)
+
+    # Test
+    if test_loader is not None and best_path.is_file():
+        try:
+            ckpt = torch.load(best_path, map_location=device, weights_only=False)
+        except TypeError:
+            ckpt = torch.load(best_path, map_location=device)
+        model.load_state_dict(ckpt["model"])
+        te = _eval_epoch(model, test_loader, device, pos_w, bce_w, dice_w)
+        write_json(exp_dir / "metrics_test.json", te)
+        append_metrics_csv(
+            exp_dir / "metrics_test_summary.csv",
+            {"split": "test", **te},
+        )
+        print("Test:", te)
+
+    # Copy to SageMaker model dir if present
+    sm = os.environ.get("SM_MODEL_DIR")
+    if sm:
+        d = Path(sm)
+        d.mkdir(parents=True, exist_ok=True)
+        if best_path.is_file():
+            shutil.copy2(best_path, d / "model.pt")
+        if metrics_csv.is_file():
+            shutil.copy2(metrics_csv, d / "metrics_epoch.csv")
+
+    return exp_dir

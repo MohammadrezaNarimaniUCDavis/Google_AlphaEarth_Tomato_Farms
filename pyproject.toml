@@ -10,5 +10,22 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
 
+[project.optional-dependencies]
+modeling = [
+  "torch>=2.2,<2.3",
+  "rasterio>=1.3",
+  "pandas>=2.0",
+  "numpy>=1.24",
+  "pyyaml>=6",
+  "tqdm>=4.66",
+]
+
 [tool.setuptools]
-packages = ["src", "src.landiq", "src.landiq.years", "src.alpha_earth", "src.utils"]
+packages = [
+  "src",
+  "src.landiq",
+  "src.landiq.years",
+  "src.alpha_earth",
+  "src.utils",
+  "src.modeling",
+]

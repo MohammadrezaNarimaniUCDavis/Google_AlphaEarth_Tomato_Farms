@@ -17,7 +17,8 @@ Detect and study **tomato farms** using **LandIQ** crop polygons and **Google Al
 | [`configs/`](configs/paths.example.yaml) | Example path and crop settings; copy to `paths.local.yaml` (gitignored) |
 | [`notebooks/`](notebooks/README.md) | Index: [`landiq/years/<YEAR>/`](notebooks/landiq/years/) (survey-year code), [`landiq/`](notebooks/landiq/) (shared), [`alpha_earth/`](notebooks/alpha_earth/), [`sagemaker/`](notebooks/sagemaker/README.md) |
 | [`src/`](src/) | Reusable Python: LandIQ inspect/filter, Alpha Earth clipping helpers |
-| [`modeling/`](modeling/README.md) | SageMaker `train.py` stub and future inference code |
+| [`modeling/`](modeling/README.md) | Pixelwise training (`train.py`) and `src/modeling/` |
+| [`guide/`](guide/README.md) | **SageMaker + Cursor remote**, S3, training checklist (read on Studio) |
 | [`figures/`](figures/README.md) | Exports for the manuscript |
 | [`paper/`](paper/README.md) | LaTeX source |
 
@@ -90,7 +91,7 @@ Create manifests or spatial subsets under [`data/splits/`](data/splits/) (polygo
 
 ### Step 5 — SageMaker (GPU)
 
-Follow [`notebooks/sagemaker/README.md`](notebooks/sagemaker/README.md). Adapt [`configs/sagemaker.example.yaml`](configs/sagemaker.example.yaml) locally (role ARN, S3 prefixes). Replace the stub in [`modeling/train/train.py`](modeling/train/train.py) with your training loop. Save plots to job output and copy into `figures/`.
+Training entry point: [`modeling/train/train.py`](modeling/train/train.py) and [`configs/modeling/tomato_unet.yaml`](configs/modeling/tomato_unet.yaml). **Studio + Cursor + S3:** start at [`guide/README.md`](guide/README.md). Optional: [`notebooks/sagemaker/README.md`](notebooks/sagemaker/README.md), [`configs/sagemaker.example.yaml`](configs/sagemaker.example.yaml) for job-based workflows. Save plots to job output or `figures/`.
 
 ### Step 6 — Paper (LaTeX)
 

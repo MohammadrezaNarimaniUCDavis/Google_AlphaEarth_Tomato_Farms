@@ -1,0 +1,11 @@
+# Local CPU dev / smoke tests (install PyTorch CPU wheels first — see guide/03-data-s3-and-training.md).
+# After CPU torch:
+#   pip install -r requirements-modeling-cpu.txt
+#   pip install -e .
+
+rasterio>=1.3
+pandas>=2.0
+numpy>=1.24
+pyyaml>=6
+tqdm>=4.66
+pyarrow>=14.0

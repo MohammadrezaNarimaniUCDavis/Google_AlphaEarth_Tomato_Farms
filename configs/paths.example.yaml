@@ -63,8 +63,8 @@ figures_dir: "figures"
 # Layout is documented in data/s3/README.md
 # -----------------------------------------------------------------------------
 s3:
-  # e.g. tomato-alphaearth-054037103012-data — replace ACCOUNT_ID with yours
-  bucket: "tomato-alphaearth-YOUR_ACCOUNT_ID-data"
+  # Project data bucket (create empty or use existing). Example account: 054037103012
+  bucket: "tomato-alphaearth-054037103012-data"
   region: "us-west-2"
   # All project objects live under this prefix inside the bucket (no leading/trailing /)
   project_root_prefix: "google-alphaearth-tomato-farms"
@@ -77,3 +77,4 @@ s3:
     manifests: "manifests"
     models: "models"
     splits: "splits"
+    experiments: "experiments"

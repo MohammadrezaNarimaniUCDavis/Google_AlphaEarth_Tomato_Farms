@@ -14,7 +14,11 @@ from torch.utils.data import DataLoader
 
 from src.modeling.dataset import AlphaEarthChipSegDataset, load_chips_table
 from src.modeling.losses import combined_loss
-from src.modeling.metrics import pixel_binary_metrics
+from src.modeling.metrics import (
+    binary_confusion_counts,
+    chip_level_correct_counts,
+    metrics_from_counts,
+)
 from src.modeling.model import TomatoUNet
 from src.modeling.logging_utils import append_metrics_csv, write_json
 from src.utils.paths import REPO_ROOT
@@ -34,17 +38,33 @@ def _pos_weight_from_df(df, split: str, device: torch.device) -> torch.Tensor:
     return torch.tensor([w], device=device, dtype=torch.float32)
 
 
+def _confusion_dict(tp: float, fp: float, fn: float, tn: float) -> dict[str, Any]:
+    """2×2 confusion + readable labels (negative class = non-tomato, positive = tomato)."""
+    return {
+        "matrix_2x2": [[int(tn), int(fp)], [int(fn), int(tp)]],
+        "row_labels": ["true_non_tomato", "true_tomato"],
+        "col_labels": ["pred_non_tomato", "pred_tomato"],
+        "tn": int(tn),
+        "fp": int(fp),
+        "fn": int(fn),
+        "tp": int(tp),
+    }
+
+
 @torch.no_grad()
-def _eval_epoch(
+def _eval_split(
     model: nn.Module,
     loader: DataLoader,
     device: torch.device,
     pos_weight: torch.Tensor | None,
     bce_w: float,
     dice_w: float,
-) -> dict[str, float]:
+) -> tuple[dict[str, float], dict[str, Any]]:
+    """Micro-averaged pixel metrics over the whole split; chip-level accuracy; confusion JSON."""
     model.eval()
-    totals: dict[str, float] = {}
+    tp = fp = fn = tn = 0.0
+    chip_ok = chip_n = 0
+    loss_sum = 0.0
     n_batches = 0
     for batch in loader:
         x = batch["x"].to(device)
@@ -52,14 +72,52 @@ def _eval_epoch(
         m = batch["mask"].to(device)
         logits = model(x)
         loss = combined_loss(logits, y, m, bce_weight=bce_w, dice_weight=dice_w, pos_weight=pos_weight)
-        metrics = pixel_binary_metrics(logits, y, m)
-        metrics["loss"] = float(loss.item())
-        for k, v in metrics.items():
-            totals[k] = totals.get(k, 0.0) + v
+        loss_sum += float(loss.item())
+        c = binary_confusion_counts(logits, y, m)
+        tp += float(c["tp"].item())
+        fp += float(c["fp"].item())
+        fn += float(c["fn"].item())
+        tn += float(c["tn"].item())
+        co, cn = chip_level_correct_counts(logits, y, m)
+        chip_ok += co
+        chip_n += cn
         n_batches += 1
     if n_batches == 0:
-        return {k: 0.0 for k in ["loss", "acc", "precision", "recall", "iou"]}
-    return {k: totals[k] / n_batches for k in totals}
+        z: dict[str, float] = {
+            "loss": 0.0,
+            "acc": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "chip_acc": 0.0,
+        }
+        return z, _confusion_dict(0.0, 0.0, 0.0, 0.0)
+    metrics = metrics_from_counts(tp, fp, fn, tn)
+    metrics["loss"] = loss_sum / n_batches
+    metrics["chip_acc"] = float(chip_ok / chip_n) if chip_n else 0.0
+    conf = _confusion_dict(tp, fp, fn, tn)
+    return metrics, conf
+
+
+METRICS_EPOCH_FIELDS = [
+    "epoch",
+    "train_loss_opt",
+    "train_loss",
+    "train_acc",
+    "train_precision",
+    "train_recall",
+    "train_f1",
+    "train_iou",
+    "train_chip_acc",
+    "val_loss",
+    "val_acc",
+    "val_precision",
+    "val_recall",
+    "val_f1",
+    "val_iou",
+    "val_chip_acc",
+]
 
 
 def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
@@ -88,6 +146,9 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
     bs = int(cfg.get("training", {}).get("batch_size", 8))
     nw = int(cfg.get("training", {}).get("num_workers", 0))
     train_loader = DataLoader(train_ds, batch_size=bs, shuffle=True, num_workers=nw, pin_memory=torch.cuda.is_available())
+    train_eval_loader = DataLoader(
+        train_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available()
+    )
     val_loader = DataLoader(val_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available())
     test_loader = (
         DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=nw, pin_memory=torch.cuda.is_available())
@@ -145,19 +206,33 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
             train_losses.append(float(loss.item()))
         tr_loss = float(np.mean(train_losses)) if train_losses else 0.0
 
-        val_m = _eval_epoch(model, val_loader, device, pos_w, bce_w, dice_w)
+        train_m, train_conf = _eval_split(model, train_eval_loader, device, pos_w, bce_w, dice_w)
+        val_m, val_conf = _eval_split(model, val_loader, device, pos_w, bce_w, dice_w)
         row = {
             "epoch": epoch,
-            "split": "val",
-            "train_loss": tr_loss,
-            "loss": val_m["loss"],
-            "acc": val_m["acc"],
-            "precision": val_m["precision"],
-            "recall": val_m["recall"],
-            "iou": val_m["iou"],
+            "train_loss_opt": tr_loss,
+            "train_loss": train_m["loss"],
+            "train_acc": train_m["acc"],
+            "train_precision": train_m["precision"],
+            "train_recall": train_m["recall"],
+            "train_f1": train_m["f1"],
+            "train_iou": train_m["iou"],
+            "train_chip_acc": train_m["chip_acc"],
+            "val_loss": val_m["loss"],
+            "val_acc": val_m["acc"],
+            "val_precision": val_m["precision"],
+            "val_recall": val_m["recall"],
+            "val_f1": val_m["f1"],
+            "val_iou": val_m["iou"],
+            "val_chip_acc": val_m["chip_acc"],
         }
-        append_metrics_csv(metrics_csv, row)
-        print(f"Epoch {epoch}/{epochs} train_loss={tr_loss:.4f} val_iou={val_m['iou']:.4f} val_loss={val_m['loss']:.4f}")
+        append_metrics_csv(metrics_csv, row, fieldnames=METRICS_EPOCH_FIELDS)
+        write_json(exp_dir / "confusion_train_last.json", train_conf)
+        write_json(exp_dir / "confusion_val_last.json", val_conf)
+        print(
+            f"Epoch {epoch}/{epochs} train_loss_opt={tr_loss:.4f} "
+            f"train_iou={train_m['iou']:.4f} val_iou={val_m['iou']:.4f} val_f1={val_m['f1']:.4f}"
+        )
 
         if val_m["iou"] > best_val:
             best_val = val_m["iou"]
@@ -173,12 +248,20 @@ def train_model(cfg: dict[str, Any], repo_root: Path | None = None) -> Path:
         except TypeError:
             ckpt = torch.load(best_path, map_location=device)
         model.load_state_dict(ckpt["model"])
-        te = _eval_epoch(model, test_loader, device, pos_w, bce_w, dice_w)
+        te, test_conf = _eval_split(model, test_loader, device, pos_w, bce_w, dice_w)
         write_json(exp_dir / "metrics_test.json", te)
-        append_metrics_csv(
-            exp_dir / "metrics_test_summary.csv",
-            {"split": "test", **te},
-        )
+        write_json(exp_dir / "confusion_test.json", test_conf)
+        test_row = {
+            "split": "test",
+            "loss": te["loss"],
+            "acc": te["acc"],
+            "precision": te["precision"],
+            "recall": te["recall"],
+            "f1": te["f1"],
+            "iou": te["iou"],
+            "chip_acc": te["chip_acc"],
+        }
+        append_metrics_csv(exp_dir / "metrics_test_summary.csv", test_row)
         print("Test:", te)
 
     # Copy to SageMaker model dir if present

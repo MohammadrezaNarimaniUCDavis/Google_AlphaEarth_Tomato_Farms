@@ -66,7 +66,15 @@ pip install -e . --no-deps
 python modeling/train/train.py --config configs/modeling/tomato_unet.yaml
 ```
 
-Outputs: `outputs/experiments/<run_id>/` — `metrics_epoch.csv`, `best.pt`, `metrics_test.json` (see `.gitignore`; copy to S3 manually if you want long-term archive).
+Outputs under `outputs/experiments/<run_id>/` (see `.gitignore`; copy to S3 to archive):
+
+| File | Contents |
+|------|-----------|
+| `metrics_epoch.csv` | Per epoch: `train_loss_opt` (minibatch mean), train/val pixel `acc`, `precision`, `recall`, `f1`, `iou`, `chip_acc`, val loss |
+| `confusion_train_last.json` / `confusion_val_last.json` | Micro-averaged 2×2 confusion (updated each epoch) |
+| `confusion_test.json` | Test split confusion after best checkpoint |
+| `metrics_test.json` | Test pixel + chip metrics |
+| `best.pt` / `last.pt` | Weights + config snapshot |
 
 ## Local Windows (`gee` conda) — CPU only
 

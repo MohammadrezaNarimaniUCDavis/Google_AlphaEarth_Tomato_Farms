@@ -6,7 +6,7 @@
 
 - **Pixelwise** U-Net on multi-band AlphaEarth embedding **GeoTIFF chips** (resized to `target_hw` in config).
 - **Chip-level label**: whole file tomato or non-tomato; **valid** pixels only; **NaNs** masked.
-- **Loss**: masked BCE + soft Dice; **metrics**: pixel accuracy, precision, recall, IoU.
+- **Loss**: masked BCE + soft Dice; **metrics**: micro-averaged pixel accuracy, precision, recall, F1, IoU; **chip_acc** (mean-probability vs chip label); **confusion** JSONs per split (`confusion_*_last.json`, `confusion_test.json`).
 - **Uncertainty (inference)**: MC Dropout in `src/modeling/infer_mc.py`.
 
 ## Layout

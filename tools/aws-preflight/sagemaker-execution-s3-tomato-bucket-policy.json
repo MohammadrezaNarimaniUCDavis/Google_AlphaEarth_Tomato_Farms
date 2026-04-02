@@ -1,0 +1,28 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TomatoAlphaEarthReadTrainingData",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:GetObjectVersion"],
+      "Resource": "arn:aws:s3:::tomato-alphaearth-054037103012-data/google-alphaearth-tomato-farms/*"
+    },
+    {
+      "Sid": "TomatoAlphaEarthListPrefix",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::tomato-alphaearth-054037103012-data",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["google-alphaearth-tomato-farms/*"]
+        }
+      }
+    },
+    {
+      "Sid": "TomatoAlphaEarthWriteExperiments",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:AbortMultipartUpload", "s3:ListMultipartUploadParts"],
+      "Resource": "arn:aws:s3:::tomato-alphaearth-054037103012-data/google-alphaearth-tomato-farms/experiments/*"
+    }
+  ]
+}

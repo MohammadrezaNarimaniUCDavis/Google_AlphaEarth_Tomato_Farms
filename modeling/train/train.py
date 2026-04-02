@@ -36,8 +36,19 @@ def main() -> None:
         default=_REPO_ROOT / "configs" / "modeling" / "tomato_unet.yaml",
         help="Path to modeling YAML",
     )
+    ap.add_argument("--epochs", type=int, default=None, help="Override training.epochs in config")
+    ap.add_argument(
+        "--batch-size",
+        type=int,
+        default=None,
+        help="Override training.batch_size in config",
+    )
     args = ap.parse_args()
     cfg = load_yaml(args.config)
+    if args.epochs is not None:
+        cfg.setdefault("training", {})["epochs"] = int(args.epochs)
+    if args.batch_size is not None:
+        cfg.setdefault("training", {})["batch_size"] = int(args.batch_size)
     out = train_model(cfg, repo_root=_REPO_ROOT)
     print("Experiment dir:", out)
 

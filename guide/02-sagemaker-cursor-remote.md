@@ -51,6 +51,16 @@ Attach an **inline policy** to role **`AmazonSageMaker-ExecutionRole-20260402T11
 
 Replace account ID if yours differs. Retry **Open in Cursor** after IAM propagation.
 
+## IAM fix: training cannot read chips from S3 (`AccessDenied` on `s3:GetObject`)
+
+If `rasterio` / training fails with **User: ... AmazonSageMaker-ExecutionRole-... is not authorized to perform: s3:GetObject** on `tomato-alphaearth-054037103012-data/...`, attach an **inline policy** to the same **SageMaker execution role** (the one shown in the error).
+
+Use the JSON in the repo (adjust bucket name or account if you changed them):
+
+**[`tools/aws-preflight/sagemaker-execution-s3-tomato-bucket-policy.json`](../tools/aws-preflight/sagemaker-execution-s3-tomato-bucket-policy.json)**
+
+It allows **read** on `google-alphaearth-tomato-farms/*` and **write** on `google-alphaearth-tomato-farms/experiments/*` (optional: for syncing checkpoints/metrics to S3). Wait a minute after saving the policy, then retry training with `ALPHA_EARTH_DATA_SOURCE=s3`.
+
 ## Local laptop prerequisites (before Open in Cursor)
 
 1. **Cursor** + extensions: **AWS Toolkit**, **Remote - SSH**.

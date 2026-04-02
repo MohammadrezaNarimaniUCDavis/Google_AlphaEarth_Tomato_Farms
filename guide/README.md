@@ -2,6 +2,8 @@
 
 Use this folder when you open the repo in **SageMaker Studio via Cursor** (remote window). Local laptop work: prep, LandIQ notebooks, optional CPU smoke tests. **GPU training** runs on Studio.
 
+**Open this repo as the Cursor workspace:** **File → Open Folder…** → select the **`Google_AlphaEarth_Tomato_Farms`** directory (repo root), **or** **File → Open Workspace from File…** → choose **`Google_AlphaEarth_Tomato_Farms.code-workspace`** in that same directory. If Cursor opened your home folder (`~`) instead, switch to the repo root so paths, git, and the terminal default match the project.
+
 | Doc | Purpose |
 |-----|---------|
 | **[01-project-plan.md](01-project-plan.md)** | Scientific goal, modeling story, metrics, phases (paper framing). |

@@ -18,7 +18,7 @@ Detect and study **tomato farms** using **LandIQ** crop polygons and **Google Al
 | [`notebooks/`](notebooks/README.md) | Index: [`landiq/years/<YEAR>/`](notebooks/landiq/years/) (survey-year code), [`landiq/`](notebooks/landiq/) (shared), [`alpha_earth/`](notebooks/alpha_earth/), [`sagemaker/`](notebooks/sagemaker/README.md) |
 | [`src/`](src/) | Reusable Python: LandIQ inspect/filter, Alpha Earth clipping helpers |
 | [`modeling/`](modeling/README.md) | Pixelwise training (`train.py`) and `src/modeling/` |
-| [`guide/`](guide/README.md) | **SageMaker + Cursor remote**, S3, training checklist (read on Studio) |
+| [`guide/`](guide/README.md) | **SageMaker + Cursor**, S3, training, inference, **costs & ops handbook** ([`05-operations-costs-and-handbook.md`](guide/05-operations-costs-and-handbook.md)) |
 | [`figures/`](figures/README.md) | Exports for the manuscript |
 | [`paper/`](paper/README.md) | LaTeX source |
 

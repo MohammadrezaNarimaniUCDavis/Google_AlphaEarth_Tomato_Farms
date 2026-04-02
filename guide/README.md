@@ -10,6 +10,17 @@ Use this folder when you open the repo in **SageMaker Studio via Cursor** (remot
 | **[02-sagemaker-cursor-remote.md](02-sagemaker-cursor-remote.md)** | Domain, Code Editor space, **IAM `StartSession` fix**, Open in Cursor, costs, preflight scripts. |
 | **[03-data-s3-and-training.md](03-data-s3-and-training.md)** | S3 layout, `chips_index`, env vars, install PyTorch on Studio, `train.py`, outputs. |
 
+**Before training (once per Studio space):** confirm GPU + S3 chip access:
+
+```bash
+cd Google_AlphaEarth_Tomato_Farms
+pip install -e . --no-deps
+export ALPHA_EARTH_DATA_SOURCE=s3
+python tools/check_training_ready.py
+```
+
+If this fails with `s3:GetObject` / `AccessDenied`, attach **`tools/aws-preflight/sagemaker-execution-s3-tomato-bucket-policy.json`** to the SageMaker execution role (see **`guide/02-sagemaker-cursor-remote.md`**), wait ~1 minute, retry.
+
 **Quick start (Studio terminal, after `git pull`):**
 
 ```bash

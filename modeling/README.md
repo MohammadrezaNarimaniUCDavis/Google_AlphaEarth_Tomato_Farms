@@ -34,4 +34,5 @@ python modeling/train/train.py --config configs/modeling/tomato_unet.yaml
 
 ## Inference
 
-`modeling/inference/` — placeholder for batch/real-time code when needed.
+- **`modeling/inference/infer_chip.py`** — one chip → `mean_prob.npz`, optional `var_prob.npz` (MC dropout), **`aggregate.json`** (chip-level stats).
+- Roadmap (tiling, multi-farm, GeoTIFF export): **`guide/04-inference-and-roadmap.md`**.

@@ -93,6 +93,27 @@ class AlphaEarthChipSegDataset(Dataset):
         }
 
 
+def load_chip_for_model(
+    local_path: str | Path,
+    target_hw: tuple[int, int],
+    *,
+    s3_uri: str | None = None,
+) -> dict[str, torch.Tensor]:
+    """Read one GeoTIFF chip → model input ``x`` (C,H,W) and ``mask`` (1,H,W), training-style resize."""
+    h, w = target_hw
+    rpath = resolve_raster_path(Path(local_path), s3_uri)
+    with rasterio.open(rpath) as ds:
+        arr = ds.read(out_dtype="float32")
+        if arr.ndim != 3:
+            raise ValueError(f"Expected CHW array, got shape {arr.shape} for {rpath}")
+    valid = np.isfinite(arr).all(axis=0).astype(np.float32)
+    arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
+    arr, valid = _resize_stack(arr, valid, h, w)
+    x = torch.from_numpy(arr).float()
+    m = torch.from_numpy(valid).float().unsqueeze(0)
+    return {"x": x, "mask": m}
+
+
 def load_chips_table(chips_csv: Path) -> pd.DataFrame:
     if not chips_csv.is_file():
         raise FileNotFoundError(

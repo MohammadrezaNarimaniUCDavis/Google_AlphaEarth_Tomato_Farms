@@ -50,6 +50,30 @@ export ALPHA_EARTH_DATA_SOURCE=s3
 
 Requires Studio execution role (or your credentials) with **S3 read** on the bucket.
 
+## Faster training: mirror chips to disk / EFS (recommended)
+
+Streaming every batch from S3 is slow. Sync once, then train from local paths:
+
+```bash
+# From repo root (AWS CLI configured; same bucket as above)
+./tools/sync_alphaearth_clips_from_s3.sh
+# Optional: only a prefix (see script comments) or add aws s3 sync flags at end
+
+export ALPHA_EARTH_DATA_SOURCE=auto   # prefer local file if present, else s3_uri
+# or: export ALPHA_EARTH_DATA_SOURCE=local
+python modeling/train/train.py --config configs/modeling/tomato_unet.yaml
+```
+
+Default training config uses **`batch_size: 16`**, **`num_workers: 8`**, **`prefetch_factor: 4`** for better I/O overlap; lower `batch_size` or `num_workers` if you hit OOM or worker errors.
+
+## Metrics: why smoke / epoch-1 numbers can look “too good”
+
+- **Smoke runs** (`tomato_unet_smoke.yaml`) only evaluate **a few batches** — metrics are **noisy** and **not** representative of full val/test.
+- **Whole-chip labels** (every valid pixel shares the same class) make the task **easier** than true segmentation: the net can lean heavily on **global texture / embedding statistics** early on.
+- For **publication**, report metrics from **full** `train.py` (no `max_train_batches` / `max_eval_batches`) over **many epochs**, compare **val vs test**, and add **baselines** (e.g. RF on embeddings) if you claim novelty.
+
+See **`guide/04-inference-and-roadmap.md`** for inference + remaining phases (tiling, multi-farm).
+
 ## Install dependencies on Studio (GPU)
 
 PyTorch **2.2.x** + CUDA **cu121** wheels (adjust if Studio image provides PyTorch already):

@@ -15,7 +15,7 @@ training:
   epochs: 1
   batch_size: 32
   tqdm: true
-  num_workers: 4
+  num_workers: 8
   prefetch_factor: 4
   learning_rate: 0.001
   weight_decay: 0.0001

@@ -15,11 +15,12 @@ model:
 
 training:
   epochs: 30
-  batch_size: 8
+  # T4 16GB: reduce to 8 if OOM; raise to 32 if VRAM headroom and you want fewer steps/epoch
+  batch_size: 16
   # Progress bars + per-batch loss in terminal (set false for log-only CI)
   tqdm: true
-  # Parallel data loading: overlaps S3/disk I/O with GPU (try 4–8; set 0 if multiprocessing errors)
-  num_workers: 4
+  # Parallel data loading (set 0 if rasterio/multiprocessing errors on your image)
+  num_workers: 8
   prefetch_factor: 4
   learning_rate: 0.001
   weight_decay: 0.0001

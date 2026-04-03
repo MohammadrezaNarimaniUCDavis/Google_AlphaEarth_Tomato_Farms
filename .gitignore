@@ -73,3 +73,5 @@ logs/
 # Local training runs (metrics JSON/CSV, checkpoints — regenerate on each machine)
 outputs/experiments/
 outputs/predictions/
+# Rotated / backup training logs under outputs/ (do not commit)
+outputs/*.bak*

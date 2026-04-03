@@ -15,13 +15,19 @@ model:
 
 training:
   epochs: 30
-  # T4 16GB: reduce to 8 if OOM; raise to 32 if VRAM headroom and you want fewer steps/epoch
-  batch_size: 16
+  # T4 16GB + AMP: 24 is a good default; if OOM: ALPHA_EARTH_TRAIN_BATCH_SIZE=16
+  batch_size: 24
+  # FP16 forward + GradScaler backward — large speedup on T4; disable with use_amp: false
+  use_amp: true
   # Progress bars + per-batch loss in terminal (set false for log-only CI)
   tqdm: true
-  # Parallel data loading (set 0 if rasterio/multiprocessing errors on your image)
-  num_workers: 8
-  prefetch_factor: 4
+  # Match PyTorch “suggested max” on many Studio shapes; raise to 6–8 if RAM allows
+  num_workers: 4
+  # Val + test DataLoaders only (train-split eval uses train num_workers). Use 0 for S3 /vsis3/ reliability.
+  eval_num_workers: 0
+  # When train chips open via /vsis3/, cap train num_workers (OOM otherwise). Env overrides: ALPHA_EARTH_S3_TRAIN_WORKERS_CAP
+  s3_train_num_workers_cap: 2
+  prefetch_factor: 8
   learning_rate: 0.001
   weight_decay: 0.0001
   bce_weight: 0.5

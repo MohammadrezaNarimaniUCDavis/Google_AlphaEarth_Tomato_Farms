@@ -59,7 +59,14 @@ class AlphaEarthChipSegDataset(Dataset):
             s3_uri = None
         rpath = resolve_raster_path(local_path, str(s3_uri) if s3_uri else None)
 
-        with rasterio.open(rpath) as ds:
+        try:
+            ds_ctx = rasterio.open(rpath)
+        except Exception as e:
+            cid = row.get("chip_id", idx)
+            raise RuntimeError(
+                f"Cannot open raster (split row idx={idx} chip_id={cid!r}): {rpath!r}"
+            ) from e
+        with ds_ctx as ds:
             arr = ds.read(out_dtype="float32")  # C,H,W
             if arr.ndim != 3:
                 raise ValueError(f"Expected CHW array, got shape {arr.shape} for {rpath}")

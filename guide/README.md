@@ -11,6 +11,7 @@ Use this folder when you open the repo in **SageMaker Studio via Cursor** (remot
 | **[03-data-s3-and-training.md](03-data-s3-and-training.md)** | S3 layout, `chips_index`, env vars, install PyTorch on Studio, `train.py`, outputs, **local sync**, **metrics caveats**. |
 | **[04-inference-and-roadmap.md](04-inference-and-roadmap.md)** | Chip inference + MC dropout, aggregation, **roadmap** (GeoTIFF export, tiling, multi-farm). |
 | **[05-operations-costs-and-handbook.md](05-operations-costs-and-handbook.md)** | **Costs (~GPU $/hr)**, GitHub push/pull, full ops checklist, training logs, doc map. |
+| **[docs/testing-and-inference-handbook/README.md](../docs/testing-and-inference-handbook/README.md)** | **Step-by-step testing** at chip / batch / tile / zonal levels; training quick reference; **`aggregate.json`** fields. |
 
 **Before training (once per Studio space):** confirm GPU + S3 chip access:
 

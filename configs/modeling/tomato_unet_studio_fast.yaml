@@ -1,0 +1,47 @@
+# Fast Studio training profile — use after switching your Space to a larger instance.
+# Strongly recommended: mirror chips once (~1.5 GB): ./tools/sync_alphaearth_clips_from_s3.sh
+# then export ALPHA_EARTH_DATA_SOURCE=auto — training/val/test all use parallel disk I/O.
+#
+# SageMaker Studio (typical picks):
+#   • ml.g5.2xlarge  — 1× NVIDIA A10G, 32 GiB RAM, 8 vCPU (recommended upgrade from g4dn.xlarge)
+#   • ml.g5.4xlarge  — same GPU, more CPU/RAM if I/O still bottlenecks
+#   • ml.g4dn.2xlarge — still T4, but 32 GiB RAM / 8 vCPU (helps S3 + DataLoader OOM, not a new GPU)
+#
+# “10× faster” is not realistic on one GPU; A10G vs T4 is often ~2–3× compute for conv/AMP workloads.
+# Bigger RAM + more workers cuts wall-clock a lot when data comes from S3 (/vsis3/).
+#
+# In Studio: Space → Change instance type → pick e.g. ml.g5.2xlarge → restart Space, then:
+#   export ALPHA_EARTH_DATA_SOURCE=auto
+#   export ALPHA_EARTH_TRAIN_FAST=1   # optional; or rely on this file alone
+#   python modeling/train/train.py --config configs/modeling/tomato_unet_studio_fast.yaml --resume ...
+#
+# If CUDA OOM: lower batch_size (e.g. 32). If host OOM: lower num_workers or s3_train_num_workers_cap.
+
+data:
+  chips_index_csv: "data/splits/chips_index.csv"
+  target_hw: [128, 128]
+
+model:
+  in_channels: 64
+  infer_in_channels: true
+  base_channels: 32
+  dropout_p: 0.1
+
+training:
+  epochs: 30
+  batch_size: 40
+  use_amp: true
+  tqdm: true
+  num_workers: 8
+  # Val/test only; train-split [eval] reuses train workers (see train_runner).
+  eval_num_workers: 0
+  s3_train_num_workers_cap: 8
+  prefetch_factor: 8
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  bce_weight: 0.5
+  dice_weight: 0.5
+  use_pos_weight: true
+
+output:
+  experiments_dir: "outputs/experiments"

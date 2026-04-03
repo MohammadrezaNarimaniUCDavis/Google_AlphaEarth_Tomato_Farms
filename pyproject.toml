@@ -19,6 +19,10 @@ modeling = [
   "pyyaml>=6",
   "tqdm>=4.66",
 ]
+figures = [
+  "matplotlib>=3.8",
+  "pandas>=2.0",
+]
 
 [tool.setuptools]
 packages = [

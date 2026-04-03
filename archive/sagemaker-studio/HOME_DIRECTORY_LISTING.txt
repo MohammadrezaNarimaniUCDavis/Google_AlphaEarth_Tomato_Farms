@@ -1,0 +1,9 @@
+# Snapshot of visible top-level names under /home/sagemaker-user (SageMaker Studio)
+# Hidden dotfiles/dotdirs are listed by name only (no contents committed).
+# Date: see SNAPSHOT_UTC.txt
+
+Google_AlphaEarth_Tomato_Farms/
+sagemaker-code-editor-server-data/
+user-default-efs  ->  symlink to EFS mount under /mnt/custom-file-systems/efs/...
+
+Other items present on the instance included standard Studio paths (.cache, .cursor, .local, etc.) — not copied into this archive.

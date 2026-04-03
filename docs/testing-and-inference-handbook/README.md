@@ -14,6 +14,8 @@ Hands-on guide for **training checks**, **running inference at different scales*
 
 Use **`best.pt`** from an experiment folder for inference unless you have a reason to use **`last.pt`**.
 
+**Checkpoints in Git:** a SageMaker Studio mirror may live under **`archive/sagemaker-studio/project-outputs/experiments/<run_id>/best.pt`** (see [`archive/sagemaker-studio/README.md`](../../archive/sagemaker-studio/README.md)). Otherwise use `outputs/experiments/<run_id>/` on the machine where you trained.
+
 ---
 
 ## 2. Training — quick reference (for reproducibility and smoke tests)

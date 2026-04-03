@@ -1,0 +1,11 @@
+{
+  "resumed_utc": "2026-04-03T21:04:12.275577+00:00",
+  "resume_checkpoint": "/home/sagemaker-user/Google_AlphaEarth_Tomato_Farms/outputs/experiments/20260402T230522Z/last.pt",
+  "argv": [
+    "modeling/train/train.py",
+    "--config",
+    "configs/modeling/tomato_unet_studio_fast.yaml",
+    "--resume",
+    "outputs/experiments/20260402T230522Z/last.pt"
+  ]
+}

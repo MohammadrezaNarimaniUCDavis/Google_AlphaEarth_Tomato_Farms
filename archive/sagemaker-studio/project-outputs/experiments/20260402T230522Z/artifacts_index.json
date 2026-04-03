@@ -1,0 +1,80 @@
+{
+  "files": [
+    {
+      "path": "best.pt",
+      "bytes": 31179032
+    },
+    {
+      "path": "config_resolved.json",
+      "bytes": 558
+    },
+    {
+      "path": "confusion_test.json",
+      "bytes": 300
+    },
+    {
+      "path": "confusion_train_last.json",
+      "bytes": 304
+    },
+    {
+      "path": "confusion_val_last.json",
+      "bytes": 300
+    },
+    {
+      "path": "experiment_complete.json",
+      "bytes": 1251
+    },
+    {
+      "path": "last.pt",
+      "bytes": 31179032
+    },
+    {
+      "path": "metrics_epoch.csv",
+      "bytes": 8825
+    },
+    {
+      "path": "metrics_test.json",
+      "bytes": 219
+    },
+    {
+      "path": "metrics_test_summary.csv",
+      "bytes": 188
+    },
+    {
+      "path": "resume_20260403T162944Z.json",
+      "bytes": 350
+    },
+    {
+      "path": "resume_20260403T192226Z.json",
+      "bytes": 350
+    },
+    {
+      "path": "resume_20260403T193247Z.json",
+      "bytes": 350
+    },
+    {
+      "path": "resume_20260403T201913Z.json",
+      "bytes": 350
+    },
+    {
+      "path": "resume_20260403T202951Z.json",
+      "bytes": 350
+    },
+    {
+      "path": "resume_20260403T210412Z.json",
+      "bytes": 362
+    },
+    {
+      "path": "resume_20260403T212659Z.json",
+      "bytes": 362
+    },
+    {
+      "path": "resume_20260403T220852Z.json",
+      "bytes": 362
+    },
+    {
+      "path": "resume_20260403T221810Z.json",
+      "bytes": 362
+    }
+  ]
+}

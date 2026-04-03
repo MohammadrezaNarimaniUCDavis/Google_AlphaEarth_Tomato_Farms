@@ -12,6 +12,7 @@ Use this folder when you open the repo in **SageMaker Studio via Cursor** (remot
 | **[04-inference-and-roadmap.md](04-inference-and-roadmap.md)** | Chip inference + MC dropout, aggregation, **roadmap** (GeoTIFF export, tiling, multi-farm). |
 | **[05-operations-costs-and-handbook.md](05-operations-costs-and-handbook.md)** | **Costs (~GPU $/hr)**, GitHub push/pull, full ops checklist, training logs, doc map. |
 | **[docs/testing-and-inference-handbook/README.md](../docs/testing-and-inference-handbook/README.md)** | **Step-by-step testing** at chip / batch / tile / zonal levels; training quick reference; **`aggregate.json`** fields. |
+| **[archive/sagemaker-studio/README.md](../archive/sagemaker-studio/README.md)** | **Studio snapshot**: metrics, checkpoints (`.pt`), logs mirrored from `outputs/` for GitHub (see folder README). |
 
 **Before training (once per Studio space):** confirm GPU + S3 chip access:
 

@@ -1,0 +1,17 @@
+{
+  "checkpoint": "outputs/experiments/20260402T223846Z/best.pt",
+  "target_hw": [
+    128,
+    128
+  ],
+  "mc_samples": 0,
+  "split": "val",
+  "chip_id": "poly_r00006_srcidx6_allbands_A00-A63",
+  "aggregate": {
+    "mean_p_tomato": 0.5777212977409363,
+    "median_p_tomato": 0.5773811936378479,
+    "frac_valid": 0.623046875,
+    "mean_uncertainty": null,
+    "frac_high_uncertainty": null
+  }
+}

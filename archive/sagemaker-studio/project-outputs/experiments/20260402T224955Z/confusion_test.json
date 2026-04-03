@@ -1,0 +1,24 @@
+{
+  "matrix_2x2": [
+    [
+      770963,
+      0
+    ],
+    [
+      92007,
+      3331334
+    ]
+  ],
+  "row_labels": [
+    "true_non_tomato",
+    "true_tomato"
+  ],
+  "col_labels": [
+    "pred_non_tomato",
+    "pred_tomato"
+  ],
+  "tn": 770963,
+  "fp": 0,
+  "fn": 92007,
+  "tp": 3331334
+}

@@ -75,3 +75,8 @@ outputs/experiments/
 outputs/predictions/
 # Rotated / backup training logs under outputs/ (do not commit)
 outputs/*.bak*
+
+# Tracked SageMaker Studio snapshot (see archive/sagemaker-studio/README.md)
+# Exceptions: global *.pt and LaTeX-adjacent *.log would otherwise block checkpoints/logs here.
+!archive/sagemaker-studio/**/*.pt
+!archive/sagemaker-studio/**/*.log

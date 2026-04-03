@@ -1,0 +1,42 @@
+{
+  "finished_utc": "2026-04-03T23:11:50.067217+00:00",
+  "best_val_iou": 0.978124081229522,
+  "metrics_test": {
+    "acc": 0.9918761092625302,
+    "precision": 0.9869442777499563,
+    "recall": 0.9939577712239402,
+    "f1": 0.9904386036558661,
+    "iou": 0.981058326068778,
+    "loss": 0.27524747854654885,
+    "chip_acc": 0.9901685393258427
+  },
+  "last_epoch_val_train_logged": {
+    "epoch": 30,
+    "train_loss_opt": 0.2667587286291214,
+    "train_loss": 0.2601791868966337,
+    "train_acc": 0.9967959853100754,
+    "train_precision": 0.997087306007612,
+    "train_recall": 0.9953426683313928,
+    "train_f1": 0.9962142183382399,
+    "train_iou": 0.9924570027793098,
+    "train_chip_acc": 0.9965351009340163,
+    "val_loss": 0.28142383962533335,
+    "val_acc": 0.9889527225628512,
+    "val_precision": 0.9899984278221761,
+    "val_recall": 0.9837267597153861,
+    "val_f1": 0.9868526244077619,
+    "val_iou": 0.97404647936933,
+    "val_chip_acc": 0.9859353023909986
+  },
+  "files": {
+    "checkpoints": [
+      "best.pt",
+      "last.pt"
+    ],
+    "metrics_epoch_csv": "metrics_epoch.csv",
+    "confusion_test": "confusion_test.json",
+    "metrics_test": "metrics_test.json",
+    "run_manifest": "run_manifest.json"
+  },
+  "artifact_count": 18
+}
